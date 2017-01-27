@@ -1,11 +1,7 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>{{ title }} - Control DashBoard</title>
-    <link rel="stylesheet" href="static/style.css" type="text/css">
-  </head>
-  <body>
-      <h1>{{ title }} - Control DashBoard</h1>
+<!-- extend base layout -->
+{% extends "base.html" %}
+
+{% block content %}
       <h2>SW Status</h2>
   <form  action="" method="post" role="form">
    {{ form.csrf }}
@@ -36,19 +32,22 @@
     <td width="200">Select Color</td>
     <td width="100">
 	 <label class="switch">
-         <input type="checkbox" name=active_color>
+         {% if SelectedColor == 'BLUE' %}
+         <input type="checkbox" name=active_color checked="" id="myCheck" onclick="myFunction()">
+         {% else %}
+         <input type="checkbox" name=active_color id="myCheck" onclick="myFunction()">
+         {% endif %}
          <div class="slider round"></div>
-         {{ form.active_color }}
+<!--         {{ form.active_color }} -->
          </form>
       </label>
     </td>
-    <td width="200">{{ SelectedColor }}</td>
+    <td width="200"><p id="showColor">{{ SelectedColor }}</p> </td>
    </tr>
    <tr>
     <td width="200"></td>
-    <td width="100"><input class="buttonSend" type="submit" value="START" name="GoTo"></td>
+    <td width="100"><input class="buttonSend" type="submit" value="START" name="START"></td>
     <td width="200"></td>
    </tr>
   </table>
-  </body>
-</html>
+{% endblock %}

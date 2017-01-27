@@ -1,5 +1,5 @@
 from app import app
-from flask import render_template, request
+from flask import render_template, request, flash
 from forms import ColorSelect
 
 @app.route('/', methods=['GET', 'POST'])
@@ -7,16 +7,16 @@ from forms import ColorSelect
 def index():
     form = ColorSelect(request.form)
     if form.active_color.data:
-       ActiveColor='RED'
+        ActiveColor = 'BLUE'
     else:
-       ActiveColor='BLUE'
+        ActiveColor = 'RED'
 
     if form.validate_on_submit():
-       flash('Color = ' + str(form.active_color.data))
-       if form.active_color.data:
-	  ActiveColor='RED'
-       else:
-	  ActiveColor='BLUE'
+        flash('Color = ' + str(form.active_color.data))
+        if form.active_color.data:
+            ActiveColor='BLUE'
+        else:
+            ActiveColor='RED'
 	   
     return render_template('index.html', title='PCR2017', 
 			    RedisState='stoped',

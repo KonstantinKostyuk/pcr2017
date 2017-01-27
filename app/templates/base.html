@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="static/style.css" type="text/css"> -->
+    {% if title %}
+    <title>{{ title }} - Control DashBoard</title>
+    {% else %}
+    <title>Control DashBoard</title>
+    {% endif %}
+  </head>
+  <body>
+    {% if title %}
+    <h1>{{ title }} - Control DashBoard</h1>
+    {% else %}
+    <h1>Control DashBoard</h1>
+    {% endif %}
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <ul>
+    {% for message in messages %}
+        <li>{{ message }} </li>
+    {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+    <script>
+    function myFunction() {
+    var x = document.getElementById("myCheck").checked;
+    if ( x ) {
+    text = "BLUE";
+	} else {
+    text = "RED";
+	}
+    document.getElementById("showColor").innerHTML = text;
+    }
+    </script>
+  </body>
+</html>
