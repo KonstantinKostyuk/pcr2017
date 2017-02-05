@@ -1,5 +1,9 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+# Required plugins:
+#	vagrant-vbguest")
+# Required VirtualBox SW for USB 2.0 support
+#	Oracle VM VirtualBox Extension Pack - http://www.oracle.com/technetwork/server-storage/virtualbox/downloads/index.htm
 
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
 # configures the configuration version (we support older styles for
@@ -10,6 +14,20 @@ Vagrant.configure("2") do |config|
   # For a complete reference, please see the online documentation at
   # https://docs.vagrantup.com.
 
+  
+  # Nice to have plugin: vagrant-cachier
+  # https://github.com/dotless-de/vagrant-vbguest
+  # Check current state by:
+  # vagrant vbguest --status
+  if Vagrant.has_plugin?("vagrant-vbguest")
+    # set auto_update to false, if you do NOT want to check the correct 
+    # additions version when booting this machine
+    config.vbguest.auto_update = false
+
+    # do NOT download the iso file from a webserver
+    config.vbguest.no_remote = true
+  end
+  
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
   config.vm.box = "ubuntu/trusty64"
@@ -61,6 +79,9 @@ Vagrant.configure("2") do |config|
   config.vm.provider "virtualbox" do |vb|
     vb.memory = "2048"
     vb.cpus = "2"
+    # VM Customizations go here
+    vb.customize ["modifyvm", :id, "--usb", "on"]     #USB 1.0
+    vb.customize ["modifyvm", :id, "--usbehci", "on"] #USB 2.0 Required additional Oracle SW
   end
 
   # Define a Vagrant Push strategy for pushing to Atlas. Other push strategies

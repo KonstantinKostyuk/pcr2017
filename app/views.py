@@ -1,9 +1,11 @@
+import redis
 from app import app
 from flask import render_template, request, flash
 from forms import ColorSelect
 from modules.processors.monitoring import Monitoring
 
 processMon = Monitoring()
+RedisServer = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
@@ -19,17 +21,22 @@ def index():
     else:
         ActiveColor = 'RED'
 
+#    if request.method == 'POST':
     if form.validate_on_submit():
-        flash('Color = ' + str(form.active_color.data))
+        flash('request.method == POST')
+        RedisServer.set('Navigation' + '.State', 'active')
         if form.active_color.data:
             ActiveColor='BLUE'
         else:
             ActiveColor='RED'
-	   
-    return render_template('index.html', title='PCR2017', 
+
+#ToDo Add load processors names from json file
+#ToDo Change render_template to send processors names as list
+#ToDo Change template index.html, process list of processors names as loop
+    return render_template('index.html', title='PCR2017',
 			    RedisState=vRedisState,
-			    NavigatorState='stoped',
-			    ServoState='wait',
-			    CamState='debug',
+			    NavigatorState=processMon.get_processor_redis('Navigation'), # stopped, active, wait, debug
+			    ServoState=processMon.get_processor_redis('Servo'),
+			    CamState=processMon.get_processor_redis('FrontCam'),
 			    SelectedColor=ActiveColor,
 				form=form)
