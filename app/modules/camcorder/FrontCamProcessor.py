@@ -73,15 +73,16 @@ if __name__ == '__main__':
         is_sucessfully_read, img = FrontCamcorder.read()
 
         FrontCamAppState = RedisServer.get(FrontCamAppName+'.State')
-        if (is_sucessfully_read) and (FrontCamAppState != 'wait'):
-            # generate file name based on current time
-            file_name = datetime.datetime.now().strftime(FrontCamAppName+"_%Y%m%d_%H%M%S.%f") + '.png'
+        if (FrontCamAppState != 'wait'):
+            if (is_sucessfully_read):
+                # generate file name based on current time
+                file_name = datetime.datetime.now().strftime(FrontCamAppName+"_%Y%m%d_%H%M%S.%f") + '.png'
 
-            # Write the image to the file
-            cv2.imwrite(os.path.join(full_path, file_name), img)
+                # Write the image to the file
+                cv2.imwrite(os.path.join(full_path, file_name), img)
 
-        else:
-            logger.error("FRONT Cannot read video capture")
+            else:
+                logger.error("FRONT Cannot read video capture")
 
     # And don't forget to release the camera!
 
