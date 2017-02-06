@@ -13,7 +13,11 @@ class Monitoring:
             self.RedisServer = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 
-
+    '''
+    function to check - is REDIS server active and response
+    0 - OK active
+    1 - NOK not response
+    '''
     def get_redis_state(self):
         cmd=self.RedisDataStorageCLI + ' ' + self.RedisCmdPing
         pipe = subprocess.PIPE
@@ -23,21 +27,36 @@ class Monitoring:
         else:
             return 1 #NOK
 
+    '''
+    function to check - is process started
+    '''
     def get_processor_state(self, name):
         for proc in psutil.process_iter():
-#            print proc.name()
             if str(proc.name()).startswith(name):
                 return 0 #OK process active
         return 1 #NOK process not active
 
+    '''
+    function to return state for current name
+    '''
     def get_processor_redis(self, name):
         if self.get_processor_state(name) == 0:
-#            print (name+'.State')
             return self.RedisServer.get(name+'.State')
         else:
             self.RedisServer.set(name+'.State', 'stopped')
             return 'stopped'
 
+    '''
+    function return any value from key for processor
+    '''
+    def get_processor_key(self, prcessor, key):
+        return self.RedisServer.get(prcessor +'.'+ key)
+
+    '''
+    function return any value from key for processor
+    '''
+    def set_processor_key(self, prcessor, key, value):
+        return self.RedisServer.set(prcessor + '.' + key, value)
 
 if __name__ == '__main__':
     processMon = Monitoring()

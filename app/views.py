@@ -5,7 +5,7 @@ from forms import ColorSelect
 from modules.processors.monitoring import Monitoring
 
 processMon = Monitoring()
-RedisServer = redis.StrictRedis(host='localhost', port=6379, db=0)
+#RedisServer = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
@@ -21,10 +21,11 @@ def index():
     else:
         ActiveColor = 'RED'
 
-#    if request.method == 'POST':
-    if form.validate_on_submit():
+    if request.method == 'POST':
+#    if form.validate_on_submit():
         flash('request.method == POST')
-        RedisServer.set('Navigation' + '.State', 'active')
+        #RedisServer.set('Navigation' + '.State', 'active')
+        processMon.set_processor_key('Navigation','State', 'active')
         if form.active_color.data:
             ActiveColor='BLUE'
         else:

@@ -5,9 +5,17 @@ import cv2
 import datetime
 import os
 import sys
-import time
 import logging
 import redis
+# Load PCR modules from ../
+modules_path=os.path.dirname(sys.argv[0])
+if len(modules_path) <= 1:  # 0 or 1 equal sterted from current dir
+    modules_path=os.getcwd()+'/../'
+else:                       # path
+    modules_path=os.path.dirname(modules_path)
+sys.path.append(modules_path)
+from processors.monitoring import Monitoring
+# Complete load PCR modules
 
 FrontCamDeviceNum = 0
 FrontCamAppName='FrontCam'
@@ -60,9 +68,10 @@ if __name__ == '__main__':
     # FrontCamcorder.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 720)
 
     # Set connection to REDIS
-    logger.info('Connect to Redis from FrontCamProcessor')
-    RedisServer = redis.StrictRedis(host='localhost', port=6379, db=0)
-    RedisServer.set(FrontCamAppName+'.State', 'wait')
+    logger.info('Connect to processMon from FrontCamProcessor')
+    processMon = Monitoring()
+    logger.info('Set State to wait for FrontCamProcessor')
+    processMon.set_processor_key(FrontCamAppName, 'State', 'wait')
 
 
     logger.info('Start capturing loop')
@@ -72,17 +81,17 @@ if __name__ == '__main__':
         # Grab a frame from the camera
         is_sucessfully_read, img = FrontCamcorder.read()
 
-        FrontCamAppState = RedisServer.get(FrontCamAppName+'.State')
-        if (FrontCamAppState != 'wait'):
-            if (is_sucessfully_read):
+        FrontCamAppState = processMon.get_processor_key(FrontCamAppName, 'State')
+        if FrontCamAppState == 'active' or FrontCamAppState == 'debug':
+            if is_sucessfully_read:
                 # generate file name based on current time
                 file_name = datetime.datetime.now().strftime(FrontCamAppName+"_%Y%m%d_%H%M%S.%f") + '.png'
 
                 # Write the image to the file
                 cv2.imwrite(os.path.join(full_path, file_name), img)
-
             else:
                 logger.error("FRONT Cannot read video capture")
+                processMon.set_processor_key(FrontCamAppName, 'State', 'error')
 
     # And don't forget to release the camera!
 
