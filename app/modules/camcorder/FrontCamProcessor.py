@@ -6,7 +6,6 @@ import datetime
 import os
 import sys
 import logging
-import redis
 # Load PCR modules from ../
 modules_path=os.path.dirname(sys.argv[0])
 if len(modules_path) <= 1:  # 0 or 1 equal sterted from current dir
@@ -59,29 +58,36 @@ if __name__ == '__main__':
         os.mkdir(full_path)
 
     # Connect to video camera
-    logger.info('Open front cam')
+    logger.info('Open video device num - '+str(FrontCamDeviceNum))
     FrontCamcorder = cv2.VideoCapture(FrontCamDeviceNum)
 
     # Set some paramiters of capture webcam
     FrontCamcorder.set(cv2.cv.CV_CAP_PROP_FPS, 5)
-    # FrontCamcorder.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1280)
-    # FrontCamcorder.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 720)
+    # PuckCamcorder.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1280)
+    # PuckCamcorder.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 720)
 
     # Set connection to REDIS
-    logger.info('Connect to processMon from FrontCamProcessor')
+    logger.info('Connect to processMon from '+FrontCamAppName+'Processor')
     processMon = Monitoring()
-    logger.info('Set State to wait for FrontCamProcessor')
-    processMon.set_processor_key(FrontCamAppName, 'State', 'wait')
+    logger.info('Set State to wait for '+FrontCamAppName+'Processor')
+    FrontCamAppState = 'wait'
+    FrontCamAppStateBefore = FrontCamAppState
+    processMon.set_processor_key(FrontCamAppName, 'State', FrontCamAppState)
 
 
     logger.info('Start capturing loop')
-    while 1 == 1:
+    isLoop = 1
+    while isLoop == 1:
         is_sucessfully_read = False
 
         # Grab a frame from the camera
         is_sucessfully_read, img = FrontCamcorder.read()
 
         FrontCamAppState = processMon.get_processor_key(FrontCamAppName, 'State')
+        if FrontCamAppStateBefore != FrontCamAppState:
+            logger.info(FrontCamAppName + 'Processor.State changed from ' + FrontCamAppStateBefore + ' to ' + FrontCamAppState)
+            FrontCamAppStateBefore = FrontCamAppState
+
         if FrontCamAppState == 'active' or FrontCamAppState == 'debug':
             if is_sucessfully_read:
                 # generate file name based on current time
@@ -90,12 +96,14 @@ if __name__ == '__main__':
                 # Write the image to the file
                 cv2.imwrite(os.path.join(full_path, file_name), img)
             else:
-                logger.error("FRONT Cannot read video capture")
+                logger.error(FrontCamAppName + ' Cannot read video capture')
                 processMon.set_processor_key(FrontCamAppName, 'State', 'error')
+        elif FrontCamAppState == 'stopped': # if True exit from loop
+            isLoop = 0
+
 
     # And don't forget to release the camera!
-
     FrontCamcorder.release()
-    RedisServer.set(FrontCamAppName + '.State', 'stopped')
+    processMon.set_processor_key(FrontCamAppName, 'State', 'stopped')
     logger.info('Stop application')
 

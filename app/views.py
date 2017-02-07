@@ -38,6 +38,7 @@ def index():
 			    RedisState=vRedisState,
 			    NavigatorState=processMon.get_processor_redis('Navigation'), # stopped, active, wait, debug
 			    ServoState=processMon.get_processor_redis('Servo'),
-			    CamState=processMon.get_processor_redis('FrontCam'),
+			    FrontCamState=processMon.get_processor_redis('FrontCam'),
+                PuckCamState=processMon.get_processor_redis('PuckCam'),
 			    SelectedColor=ActiveColor,
 				form=form)

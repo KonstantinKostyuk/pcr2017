@@ -4,3 +4,4 @@
 flask
 tmp
 *.pyc
+*.log
