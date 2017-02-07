@@ -19,6 +19,36 @@ from processors.monitoring import Monitoring
 PuckCamDeviceNum = 1
 PuckCamAppName= 'PuckCam'
 
+# Function returns the color of area based on the everaged colors of the ares
+def determine_area_color(x1, x2, y1, y2, area, domination):
+    # Calculate mean colors by each color channel
+    blue = img[y1:y2, x1:x2, 0].mean()
+    green = img[y1:y2, x1:x2, 1].mean()
+    red = img[y1:y2, x1:x2, 2].mean()
+
+    # Compare colors in the area to find red or blue domination
+    if blue > red * domination:
+        color = "blue"
+    elif red > blue * domination:
+        color = "red"
+    else:
+        color = "white"
+
+    # Make a square around the area of the mean color
+    img[y1:y1 + 1, x1:x2] = [blue, green, red]
+    img[y2 - 1:y2, x1:x2] = [blue, green, red]
+    img[y1:y2, x1:x1 + 1] = [blue, green, red]
+    img[y1:y2, x2 - 1:x2] = [blue, green, red]
+
+    # Write the identified color on the area
+    cv2.putText(img, color, (x1, (y1 + y2) / 2), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.5, 10)
+
+    # Print out the results in text form
+    logger.debug("Color of " + area + " area is " + color + ". (R:" + str(int(red)) + " G:" + str(int(green)) + " B:" +
+                 str(int(blue)) + ")")
+    # returm detected color
+    return color
+
 # --- MAIN ---
 if __name__ == '__main__':
 
