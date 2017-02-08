@@ -38,10 +38,22 @@ GT_RED_OPEN_POS = 4000   # Gate for RED store open
 GT_BLU_OPEN_POS = 8000   # Gate for BLUE store open
 
 def get_color_list(procmon):
-    colors = [procmon.get_processor_key(ColorProcessorAppName + '.left_color'),
-              procmon.get_processor_key(ColorProcessorAppName + '.middle_color'),
-              procmon.get_processor_key(ColorProcessorAppName + '.right_color')]
+    colors = [procmon.get_processor_key(ColorProcessorAppName, 'left_color'),
+              procmon.get_processor_key(ColorProcessorAppName, 'middle_color'),
+              procmon.get_processor_key(ColorProcessorAppName, 'right_color')]
     return colors
+
+def get_puck_color(procmon, list_colors):
+    if list_colors[0] == list_colors[1] and list_colors[1] == list_colors[2]:
+        procmon.set_processor_key(NavigationAppName, 'Base', list_colors[1])
+        return 'none'
+    elif list_colors[0] != list_colors[1] and list_colors[1] != list_colors[2]:
+        procmon.set_processor_key(NavigationAppName, 'Base', 'white')
+        return list_colors[1]
+    else:
+        procmon.set_processor_key(NavigationAppName, 'Base', 'white')
+        return 'none'
+
 
 # --- MAIN ---
 if __name__ == '__main__':
@@ -115,8 +127,11 @@ if __name__ == '__main__':
             AppStateBefore = AppState
 
         if AppState == 'active' or AppState == 'debug':
-            time.sleep(1)  #ToDo add servo actions
-            print (get_color_list(processMon))
+            list_colors = get_color_list(processMon)
+            print(list_colors)
+            print(get_puck_color(processMon, list_colors))
+            print(processMon.get_processor_key(NavigationAppName, 'Base'))
+
         elif AppState == 'stopped': # if True exit from loop
             isLoop = 0
 
