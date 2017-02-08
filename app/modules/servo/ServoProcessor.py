@@ -1,8 +1,7 @@
 #!/usr/bin/python
 
-#  Import openCV libraries
-import cv2
-import datetime
+#  Import  libraries
+import time
 import os
 import sys
 import logging
@@ -20,6 +19,7 @@ from Maestro.maestro import Controller as ServoController
 #Used app names
 ColorProcessorAppName='PuckCam'
 NavigationAppName='Navigation'
+GlobalAppName='Global'
 
 #Current app name and settings
 ServoAppName= 'Servo'
@@ -54,6 +54,23 @@ def get_puck_color(procmon, list_colors):
         procmon.set_processor_key(NavigationAppName, 'Base', 'white')
         return 'none'
 
+def sort_pucks(puck_color, direction):
+    if (puck_color == 'blue') and direction == 'FWD':
+        # blue
+        logger.info('Sort the ' +puck_color+ ' puck.')
+        servo.setTarget(SRV_SEP_CHANEL, SEP_BLU_OPEN_POS)
+        time.sleep(1)
+        servo.setTarget(SRV_SEP_CHANEL, SRV_NEUTRAL_POS)
+        return puck_color
+    elif (puck_color == 'red') and direction == 'FWD':
+        # red
+        logger.info('Sort the ' + puck_color + ' puck.')
+        servo.setTarget(SRV_SEP_CHANEL, SEP_RED_OPEN_POS)
+        time.sleep(1)
+        servo.setTarget(SRV_SEP_CHANEL, SRV_NEUTRAL_POS)
+        return puck_color
+    else:
+        return 'none'
 
 # --- MAIN ---
 if __name__ == '__main__':
@@ -126,11 +143,22 @@ if __name__ == '__main__':
             logger.info(ServoAppName + 'Processor.State changed from ' + AppStateBefore + ' to ' + AppState)
             AppStateBefore = AppState
 
-        if AppState == 'active' or AppState == 'debug':
+        if AppState == 'active':
+            list_colors = get_color_list(processMon)
+
+        elif AppState == 'debug':
             list_colors = get_color_list(processMon)
             print(list_colors)
-            print(get_puck_color(processMon, list_colors))
+            puck_color = get_puck_color(processMon, list_colors)
+            print(puck_color)
             print(processMon.get_processor_key(NavigationAppName, 'Base'))
+            if puck_color != 'none'
+                sort_result = sort_pucks(puck_color, 'FWD')
+                if sort_result != 'none'
+                    processMon.set_processor_key(GlobalAppName, sort_result, processMon.get_processor_key(GlobalAppName, sort_result) + 1 )
+
+            processMon.set_processor_key(ServoAppName, 'State', 'wait')
+            # debug state complete
 
         elif AppState == 'stopped': # if True exit from loop
             isLoop = 0
