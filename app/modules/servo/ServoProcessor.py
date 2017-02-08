@@ -147,15 +147,12 @@ if __name__ == '__main__':
             list_colors = get_color_list(processMon)
 
         elif AppState == 'debug':
-            list_colors = get_color_list(processMon)
-            print(list_colors)
-            puck_color = get_puck_color(processMon, list_colors)
-            print(puck_color)
-            print(processMon.get_processor_key(NavigationAppName, 'Base'))
-            if puck_color != 'none'
-                sort_result = sort_pucks(puck_color, 'FWD')
-                if sort_result != 'none'
-                    processMon.set_processor_key(GlobalAppName, sort_result, processMon.get_processor_key(GlobalAppName, sort_result) + 1 )
+            list_colors = get_color_list(processMon) # get list of colors from PuckCam
+            puck_color = get_puck_color(processMon, list_colors) # detect puck and color
+            if puck_color != 'none': # if not 'none' sorting
+                sort_result = sort_pucks(puck_color, processMon.get_processor_key(NavigationAppName, 'Direction'))
+                if sort_result != 'none':
+                    processMon.set_processor_key(GlobalAppName, sort_result, int(processMon.get_processor_key(GlobalAppName, sort_result)) + 1 )
 
             processMon.set_processor_key(ServoAppName, 'State', 'wait')
             # debug state complete
