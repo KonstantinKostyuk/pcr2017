@@ -17,8 +17,13 @@ from processors.monitoring import Monitoring
 from Maestro.maestro import Controller as ServoController
 # Complete load PCR modules
 
-ServoControllerDeviceNum = 1
-ServoAppName= 'Setvo'
+#Used app names
+ColorProcessorAppName='PuckCam'
+NavigationAppName='Navigation'
+
+#Current app name and settings
+ServoAppName= 'Servo'
+ServoControllerDeviceNum = '/dev/ttyACM1'
 ServoSpeed=0 # Unlimited by SW, as speed as possible
 ServoAccel=0 # Unlimited by SW, as speed as possible
 
@@ -31,6 +36,12 @@ SEP_RED_OPEN_POS = 9000  # Separator sort to RED
 SEP_BLU_OPEN_POS = 3000  # Separator sort to BLUE
 GT_RED_OPEN_POS = 4000   # Gate for RED store open
 GT_BLU_OPEN_POS = 8000   # Gate for BLUE store open
+
+def get_color_list(procmon):
+    colors = [procmon.get_processor_key(ColorProcessorAppName + '.left_color'),
+              procmon.get_processor_key(ColorProcessorAppName + '.middle_color'),
+              procmon.get_processor_key(ColorProcessorAppName + '.right_color')]
+    return colors
 
 # --- MAIN ---
 if __name__ == '__main__':
@@ -62,7 +73,7 @@ if __name__ == '__main__':
     # Set num of cam
     logger.info('Start app ' + ServoAppName)
 
-    # Dir for save cam frames
+    # Dir for save
     current_dir = os.getcwd()
     store_dir = appstart_time_point
     full_path = os.path.join(current_dir, store_dir)
@@ -105,6 +116,7 @@ if __name__ == '__main__':
 
         if AppState == 'active' or AppState == 'debug':
             time.sleep(1)  #ToDo add servo actions
+            print (get_color_list(processMon))
         elif AppState == 'stopped': # if True exit from loop
             isLoop = 0
 
