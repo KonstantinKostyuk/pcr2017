@@ -23,6 +23,10 @@ GlobalAppName='Global'
 
 #Current app name and settings
 ServoAppName= 'Servo'
+AppState = 'wait'
+AppStateBefore = AppState
+GateState = 'close'
+
 ServoControllerDeviceNum = '/dev/ttyACM1'
 ServoSpeed=0 # Unlimited by SW, as speed as possible
 ServoAccel=0 # Unlimited by SW, as speed as possible
@@ -71,6 +75,40 @@ def sort_pucks(puck_color, direction):
         return puck_color
     else:
         return 'none'
+
+def release_red():
+    logger.debug('Open RED gate')
+    servo.setTarget(SRV_RED_CHANEL, GT_RED_OPEN_POS)
+
+def release_blue():
+    logger.debug('Open BLUE gate')
+    servo.setTarget(SRV_BLU_CHANEL, GT_BLU_OPEN_POS)
+
+def close_gates():
+    logger.debug('Close gates')
+    servo.setTarget(SRV_RED_CHANEL, SRV_NEUTRAL_POS)
+    servo.setTarget(SRV_BLU_CHANEL, SRV_NEUTRAL_POS)
+
+def active_iteration(proc_mon, gate_state_before):
+    # Control separating
+    list_colors = get_color_list(proc_mon)  # get list of colors from PuckCam
+    puck_color = get_puck_color(proc_mon, list_colors)  # detect puck and color
+    if puck_color != 'none':  # if not 'none' sorting
+        sort_result = sort_pucks(puck_color, proc_mon.get_processor_key(NavigationAppName, 'Direction'))
+        if sort_result != 'none':
+            proc_mon.set_processor_key(GlobalAppName, sort_result,
+                                         int(proc_mon.get_processor_key(GlobalAppName, sort_result)) + 1)
+
+    # Control gates
+    gate_state = proc_mon.get_processor_key(NavigationAppName, 'Gate')
+    if gate_state_before != gate_state and gate_state == 'close':
+        close_gates()
+    elif gate_state_before != gate_state and gate_state == 'red':
+        release_red()
+    elif gate_state_before != gate_state and gate_state == 'blue':
+        release_blue()
+    return gate_state
+
 
 # --- MAIN ---
 if __name__ == '__main__':
@@ -130,35 +168,27 @@ if __name__ == '__main__':
     logger.info('Connect to processMon from ' + ServoAppName + 'Processor')
     processMon = Monitoring()
     logger.info('Set State to wait for ' + ServoAppName + 'Processor')
-    AppState = 'wait'
-    AppStateBefore = AppState
     processMon.set_processor_key(ServoAppName, 'State', AppState)
 
-
     logger.info('Start application loop')
-    isLoop = 1
-    while isLoop == 1:
+    isLoop = True
+    while isLoop :
         AppState = processMon.get_processor_key(ServoAppName, 'State')
         if AppStateBefore != AppState:
             logger.info(ServoAppName + 'Processor.State changed from ' + AppStateBefore + ' to ' + AppState)
             AppStateBefore = AppState
 
-        if AppState == 'active':
-            list_colors = get_color_list(processMon)
+        if AppState == 'active': # active state start
+            GateState = active_iteration(processMon, GateState)
+            # active state complete
 
-        elif AppState == 'debug':
-            list_colors = get_color_list(processMon) # get list of colors from PuckCam
-            puck_color = get_puck_color(processMon, list_colors) # detect puck and color
-            if puck_color != 'none': # if not 'none' sorting
-                sort_result = sort_pucks(puck_color, processMon.get_processor_key(NavigationAppName, 'Direction'))
-                if sort_result != 'none':
-                    processMon.set_processor_key(GlobalAppName, sort_result, int(processMon.get_processor_key(GlobalAppName, sort_result)) + 1 )
-
+        elif AppState == 'debug': # debug state start
+            GateState = active_iteration(processMon, GateState)
             processMon.set_processor_key(ServoAppName, 'State', 'wait')
             # debug state complete
 
         elif AppState == 'stopped': # if True exit from loop
-            isLoop = 0
+            isLoop = False
 
     # Close application
     processMon.set_processor_key(ServoAppName, 'State', 'stopped')
