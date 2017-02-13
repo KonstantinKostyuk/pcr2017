@@ -23,17 +23,17 @@ AppStateBefore = AppState
 I2CBUS = 6                # Bus number for LCD
 
 
-def print_to_lcd(procmon):
-    lcdRed = procmon.get_processor_key(AppName, 'Red')
-    lcdGreen = procmon.get_processor_key(AppName, 'Green')
-    lcdBlue = procmon.get_processor_key(AppName, 'Blue')
+def print_to_lcd(procmon, lcd1602):
+    lcdRed = int(procmon.get_processor_key(AppName, 'Red'))
+    lcdGreen = int(procmon.get_processor_key(AppName, 'Green'))
+    lcdBlue = int(procmon.get_processor_key(AppName, 'Blue'))
     lcdLineA = procmon.get_processor_key(AppName, 'LineA')
     lcdLineB = procmon.get_processor_key(AppName, 'LineB')
-    lcd.setColor(lcdRed, lcdGreen, lcdBlue)
-    lcd.setCursor(0, 0)
-    lcd.write(lcdLineA)
-    lcd.setCursor(1, 0)
-    lcd.write(lcdLineB)
+    lcd1602.setColor(lcdRed, lcdGreen, lcdBlue)
+    lcd1602.setCursor(0, 0)
+    lcd1602.write(lcdLineA)
+    lcd1602.setCursor(1, 0)
+    lcd1602.write(lcdLineB)
 
 
 # --- MAIN ---
@@ -75,12 +75,12 @@ if __name__ == '__main__':
         os.mkdir(full_path)
 
     # Connect to LCD
-    logger.info('Open video device num - '+str(FrontCamDeviceNum))
+    logger.info('Open I2C device num - '+str(I2CBUS))
     lcd = i2clcd.Jhd1313m1(I2CBUS, 0x3E, 0x62)
 
-    # Set some paramiters
-    myLcd.setCursor(0, 0)
-    myLcd.setColor(0, 255, 255)
+    # Set yellow
+    lcd.setCursor(0, 0)
+    lcd.setColor(255, 255, 0)
 
     # Set connection to REDIS
     logger.info('Connect to processMon from ' + AppName + 'Processor')
@@ -88,8 +88,7 @@ if __name__ == '__main__':
     logger.info('Set State to ' + AppState + ' for ' + AppName + 'Processor')
     processMon.set_processor_key(AppName, 'State', AppState)
 
-
-    logger.info('Start capturing loop')
+    logger.info('Start loop')
     isLoop = 1
     while isLoop == 1:
 
@@ -99,17 +98,17 @@ if __name__ == '__main__':
             AppStateBefore = AppState
 
         if AppState == 'active':
-            print_to_lcd()
+            print_to_lcd(processMon, lcd)
 
         elif AppState == 'debug':
-            print_to_lcd()
+            print_to_lcd(processMon, lcd)
+            AppState = 'wait'
+            processMon.set_processor_key(AppName, 'State', AppState)
 
         elif AppState == 'stopped': # if True exit from loop
             isLoop = 0
 
-
     # And don't forget to release the camera!
-    FrontCamcorder.release()
     processMon.set_processor_key(AppName, 'State', 'stopped')
     logger.info('Stop application')
 
