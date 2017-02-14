@@ -16,21 +16,20 @@ sys.path.append(modules_path)
 from processors.monitoring import Monitoring
 # Complete load PCR modules
 
-FrontCamDeviceNum = 0
-FrontCamAppName='FrontCam'
+DeviceNum = 0
+AppName= 'FrontCam'
+AppState = 'wait'
+AppStateBefore = AppState
 
-# --- MAIN ---
-if __name__ == '__main__':
+# create logger
+logger = logging.getLogger(AppName + 'Processor')
 
-    # get a main app start point
-    appstart_time_point = str(sys.argv[1])
-
-    # create logger with 'pcr2016'
-    logger = logging.getLogger(FrontCamAppName+'Processor')
+def init_logging(logger):
+    # setup logger level
     logger.setLevel(logging.DEBUG)
 
     # create file handler which logs even debug messages, name based on appstart_time_point
-    fh = logging.FileHandler(FrontCamAppName+appstart_time_point + '.log')
+    fh = logging.FileHandler(AppName + appstart_time_point + '.log')
     fh.setLevel(logging.DEBUG)
 
     # create console handler with a debug log level
@@ -46,8 +45,17 @@ if __name__ == '__main__':
     logger.addHandler(fh)
     logger.addHandler(ch)
 
+# --- MAIN ---
+if __name__ == '__main__':
+
+    # Setup logging
+    init_logging(logger)
+
+    # get a main app start point
+    appstart_time_point = str(sys.argv[1])
+
     # Set num of cam
-    logger.info('Start app '+FrontCamAppName)
+    logger.info('Start app ' + AppName)
 
     # Dir for save cam frames
     current_dir = os.getcwd()
@@ -58,8 +66,8 @@ if __name__ == '__main__':
         os.mkdir(full_path)
 
     # Connect to video camera
-    logger.info('Open video device num - '+str(FrontCamDeviceNum))
-    FrontCamcorder = cv2.VideoCapture(FrontCamDeviceNum)
+    logger.info('Open video device num - ' + str(DeviceNum))
+    FrontCamcorder = cv2.VideoCapture(DeviceNum)
 
     # Set some paramiters of capture webcam
     FrontCamcorder.set(cv2.cv.CV_CAP_PROP_FPS, 5)
@@ -67,12 +75,10 @@ if __name__ == '__main__':
     # PuckCamcorder.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 720)
 
     # Set connection to REDIS
-    logger.info('Connect to processMon from '+FrontCamAppName+'Processor')
+    logger.info('Connect to processMon from ' + AppName + 'Processor')
     processMon = Monitoring()
-    logger.info('Set State to wait for '+FrontCamAppName+'Processor')
-    FrontCamAppState = 'wait'
-    FrontCamAppStateBefore = FrontCamAppState
-    processMon.set_processor_key(FrontCamAppName, 'State', FrontCamAppState)
+    logger.info('Set State to wait for ' + AppName + 'Processor')
+    processMon.set_processor_key(AppName, 'State', AppState)
 
 
     logger.info('Start capturing loop')
@@ -83,27 +89,27 @@ if __name__ == '__main__':
         # Grab a frame from the camera
         is_sucessfully_read, img = FrontCamcorder.read()
 
-        FrontCamAppState = processMon.get_processor_key(FrontCamAppName, 'State')
-        if FrontCamAppStateBefore != FrontCamAppState:
-            logger.info(FrontCamAppName + 'Processor.State changed from ' + FrontCamAppStateBefore + ' to ' + FrontCamAppState)
-            FrontCamAppStateBefore = FrontCamAppState
+        AppState = processMon.get_processor_key(AppName, 'State')
+        if AppStateBefore != AppState:
+            logger.info(AppName + 'Processor.State changed from ' + AppStateBefore + ' to ' + AppState)
+            AppStateBefore = AppState
 
-        if FrontCamAppState == 'active' or FrontCamAppState == 'debug':
+        if AppState == 'active' or AppState == 'debug':
             if is_sucessfully_read:
                 # generate file name based on current time
-                file_name = datetime.datetime.now().strftime(FrontCamAppName+"_%Y%m%d_%H%M%S.%f") + '.png'
+                file_name = datetime.datetime.now().strftime(AppName + "_%Y%m%d_%H%M%S.%f") + '.png'
 
                 # Write the image to the file
                 cv2.imwrite(os.path.join(full_path, file_name), img)
             else:
-                logger.error(FrontCamAppName + ' Cannot read video capture')
-                processMon.set_processor_key(FrontCamAppName, 'State', 'error')
-        elif FrontCamAppState == 'stopped': # if True exit from loop
+                logger.error(AppName + ' Cannot read video capture')
+                processMon.set_processor_key(AppName, 'State', 'error')
+        elif AppState == 'stopped': # if True exit from loop
             isLoop = 0
 
 
     # And don't forget to release the camera!
     FrontCamcorder.release()
-    processMon.set_processor_key(FrontCamAppName, 'State', 'stopped')
+    processMon.set_processor_key(AppName, 'State', 'stopped')
     logger.info('Stop application')
 

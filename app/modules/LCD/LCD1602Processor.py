@@ -16,34 +16,16 @@ from processors.monitoring import Monitoring
 # Complete load PCR modules
 from upm import pyupm_i2clcd as i2clcd
 
+DeviceNum = 6                # I2C Bus number for LCD
 AppName= 'LCD1602'
 AppState = 'wait'
 AppStateBefore = AppState
 
-I2CBUS = 6                # Bus number for LCD
+# create logger
+logger = logging.getLogger(AppName + 'Processor')
 
-
-def print_to_lcd(procmon, lcd1602):
-    lcdRed = int(procmon.get_processor_key(AppName, 'Red'))
-    lcdGreen = int(procmon.get_processor_key(AppName, 'Green'))
-    lcdBlue = int(procmon.get_processor_key(AppName, 'Blue'))
-    lcdLineA = procmon.get_processor_key(AppName, 'LineA')
-    lcdLineB = procmon.get_processor_key(AppName, 'LineB')
-    lcd1602.setColor(lcdRed, lcdGreen, lcdBlue)
-    lcd1602.setCursor(0, 0)
-    lcd1602.write(lcdLineA)
-    lcd1602.setCursor(1, 0)
-    lcd1602.write(lcdLineB)
-
-
-# --- MAIN ---
-if __name__ == '__main__':
-
-    # get a main app start point
-    appstart_time_point = str(sys.argv[1])
-
-    # create logger with 'pcr2016'
-    logger = logging.getLogger(AppName + 'Processor')
+def init_logging(logger):
+    # setup logger level
     logger.setLevel(logging.DEBUG)
 
     # create file handler which logs even debug messages, name based on appstart_time_point
@@ -63,6 +45,29 @@ if __name__ == '__main__':
     logger.addHandler(fh)
     logger.addHandler(ch)
 
+
+def print_to_lcd(procmon, lcd1602):
+    lcdRed = int(procmon.get_processor_key(AppName, 'Red'))
+    lcdGreen = int(procmon.get_processor_key(AppName, 'Green'))
+    lcdBlue = int(procmon.get_processor_key(AppName, 'Blue'))
+    lcdLineA = procmon.get_processor_key(AppName, 'LineA')
+    lcdLineB = procmon.get_processor_key(AppName, 'LineB')
+    lcd1602.setColor(lcdRed, lcdGreen, lcdBlue)
+    lcd1602.setCursor(0, 0)
+    lcd1602.write(lcdLineA)
+    lcd1602.setCursor(1, 0)
+    lcd1602.write(lcdLineB)
+
+
+# --- MAIN ---
+if __name__ == '__main__':
+
+    # Setup logging
+    init_logging(logger)
+
+    # get a main app start point
+    appstart_time_point = str(sys.argv[1])
+
     # Set num of cam
     logger.info('Start app ' + AppName)
 
@@ -75,8 +80,8 @@ if __name__ == '__main__':
         os.mkdir(full_path)
 
     # Connect to LCD
-    logger.info('Open I2C device num - '+str(I2CBUS))
-    lcd = i2clcd.Jhd1313m1(I2CBUS, 0x3E, 0x62)
+    logger.info('Open I2C device num - ' + str(DeviceNum))
+    lcd = i2clcd.Jhd1313m1(DeviceNum, 0x3E, 0x62)
 
     # Set yellow
     lcd.setCursor(0, 0)

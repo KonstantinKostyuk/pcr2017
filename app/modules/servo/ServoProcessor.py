@@ -22,12 +22,12 @@ NavigationAppName='Navigation'
 GlobalAppName='Global'
 
 #Current app name and settings
-ServoAppName= 'Servo'
+AppName= 'Servo'
 AppState = 'wait'
 AppStateBefore = AppState
 GateState = 'close'
 
-ServoControllerDeviceNum = '/dev/ttyACM1'
+DeviceNum = '/dev/ttyACM1'
 ServoSpeed=0 # Unlimited by SW, as speed as possible
 ServoAccel=0 # Unlimited by SW, as speed as possible
 
@@ -40,6 +40,30 @@ SEP_RED_OPEN_POS = 9000  # Separator sort to RED
 SEP_BLU_OPEN_POS = 3000  # Separator sort to BLUE
 GT_RED_OPEN_POS = 4000   # Gate for RED store open
 GT_BLU_OPEN_POS = 8000   # Gate for BLUE store open
+
+# create logger
+logger = logging.getLogger(AppName + 'Processor')
+
+def init_logging(logger):
+    # setup logger level
+    logger.setLevel(logging.DEBUG)
+
+    # create file handler which logs even debug messages, name based on appstart_time_point
+    fh = logging.FileHandler(AppName + appstart_time_point + '.log')
+    fh.setLevel(logging.DEBUG)
+
+    # create console handler with a debug log level
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+
+    # create formatter and add it to the handlers
+    formatter = logging.Formatter('%(asctime)s|%(levelname)s|%(name)s|%(funcName)s(%(lineno)d)|%(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+
+    # add the handlers to the logger
+    logger.addHandler(fh)
+    logger.addHandler(ch)
 
 def get_color_list(procmon):
     colors = [procmon.get_processor_key(ColorProcessorAppName, 'left_color'),
@@ -113,32 +137,14 @@ def active_iteration(proc_mon, gate_state_before):
 # --- MAIN ---
 if __name__ == '__main__':
 
+    # Setup logging
+    init_logging(logger)
+
     # get a main app start point
     appstart_time_point = str(sys.argv[1])
 
-    # create logger with 'pcr2016'
-    logger = logging.getLogger(ServoAppName + 'Processor')
-    logger.setLevel(logging.DEBUG)
-
-    # create file handler which logs even debug messages, name based on appstart_time_point
-    fh = logging.FileHandler(ServoAppName + appstart_time_point + '.log')
-    fh.setLevel(logging.DEBUG)
-
-    # create console handler with a debug log level
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter('%(asctime)s|%(levelname)s|%(name)s|%(funcName)s(%(lineno)d)|%(message)s')
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-
-    # add the handlers to the logger
-    logger.addHandler(fh)
-    logger.addHandler(ch)
-
     # Set num of cam
-    logger.info('Start app ' + ServoAppName)
+    logger.info('Start app ' + AppName)
 
     # Dir for save
     current_dir = os.getcwd()
@@ -149,8 +155,8 @@ if __name__ == '__main__':
         os.mkdir(full_path)
 
     # Connect to servo controller
-    logger.info('Open device num - ' + str(ServoControllerDeviceNum))
-    servo = ServoController(ServoControllerDeviceNum)
+    logger.info('Open device num - ' + str(DeviceNum))
+    servo = ServoController(DeviceNum)
     logger.info('Init CH: ' + str(SRV_SEP_CHANEL) +' POS: '+ str(SRV_NEUTRAL_POS))
     servo.setTarget(SRV_SEP_CHANEL, SRV_NEUTRAL_POS)
     servo.setAccel(SRV_SEP_CHANEL, ServoAccel)
@@ -165,17 +171,17 @@ if __name__ == '__main__':
     servo.setSpeed(SRV_BLU_CHANEL, ServoSpeed)
 
     # Set connection to REDIS
-    logger.info('Connect to processMon from ' + ServoAppName + 'Processor')
+    logger.info('Connect to processMon from ' + AppName + 'Processor')
     processMon = Monitoring()
-    logger.info('Set State to wait for ' + ServoAppName + 'Processor')
-    processMon.set_processor_key(ServoAppName, 'State', AppState)
+    logger.info('Set State to wait for ' + AppName + 'Processor')
+    processMon.set_processor_key(AppName, 'State', AppState)
 
     logger.info('Start application loop')
     isLoop = True
     while isLoop :
-        AppState = processMon.get_processor_key(ServoAppName, 'State')
+        AppState = processMon.get_processor_key(AppName, 'State')
         if AppStateBefore != AppState:
-            logger.info(ServoAppName + 'Processor.State changed from ' + AppStateBefore + ' to ' + AppState)
+            logger.info(AppName + 'Processor.State changed from ' + AppStateBefore + ' to ' + AppState)
             AppStateBefore = AppState
 
         if AppState == 'active': # active state start
@@ -184,13 +190,13 @@ if __name__ == '__main__':
 
         elif AppState == 'debug': # debug state start
             GateState = active_iteration(processMon, GateState)
-            processMon.set_processor_key(ServoAppName, 'State', 'wait')
+            processMon.set_processor_key(AppName, 'State', 'wait')
             # debug state complete
 
         elif AppState == 'stopped': # if True exit from loop
             isLoop = False
 
     # Close application
-    processMon.set_processor_key(ServoAppName, 'State', 'stopped')
+    processMon.set_processor_key(AppName, 'State', 'stopped')
     logger.info('Stop application')
 
