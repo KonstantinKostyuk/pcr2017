@@ -44,7 +44,7 @@ GT_BLU_OPEN_POS = 8000   # Gate for BLUE store open
 # create logger
 logger = logging.getLogger(AppName + 'Processor')
 
-def init_logging(logger):
+def init_logging(logger, appstart_time_point):
     # setup logger level
     logger.setLevel(logging.DEBUG)
 
