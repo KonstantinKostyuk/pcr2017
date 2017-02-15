@@ -62,11 +62,11 @@ def print_to_lcd(procmon, lcd1602):
 # --- MAIN ---
 if __name__ == '__main__':
 
-    # Setup logging
-    init_logging(logger)
-
     # get a main app start point
     appstart_time_point = str(sys.argv[1])
+
+    # Setup logging
+    init_logging(logger, appstart_time_point)
 
     # Set num of cam
     logger.info('Start app ' + AppName)
