@@ -17,10 +17,14 @@ from processors.monitoring import Monitoring
 from roboclaw.roboclaw import RoboClaw
 # Complete load PCR modules
 
+# --- Set global variables
 DeviceNum = '/dev/ttyACM0'
 AppName= 'Navigation'
 AppState = 'wait'
 AppStateBefore = AppState
+
+#Used app names
+GlobalAppName='Global'
 
 MotorLeft = 1
 MotorRight = 0
@@ -28,16 +32,22 @@ MotorRight = 0
 WheelDiameter = 90  # Diameter of wheel in mm
 EncoderCPR = 3200   # Encoder CPR - Count Per Rotation
 
+# --- Create global classes
 # create logger
 logger = logging.getLogger(AppName + 'Processor')
+# create connection to REDIS
+logger.info('Connect to processMon from ' + AppName + 'Processor')
+processMon = Monitoring()
+try:
+    # create to RoboClaw
+    logger.info('Open device num - ' + str(DeviceNum))
+    roboclaw = RoboClaw(DeviceNum, 0x80)
+except:
+    AppState = 'error'
 
-def init_logging(logger, appstart_time_point):
+def init_console_logging(logger):
     # setup logger level
     logger.setLevel(logging.DEBUG)
-
-    # create file handler which logs even debug messages, name based on appstart_time_point
-    fh = logging.FileHandler(AppName + appstart_time_point + '.log')
-    fh.setLevel(logging.DEBUG)
 
     # create console handler with a debug log level
     ch = logging.StreamHandler()
@@ -45,12 +55,36 @@ def init_logging(logger, appstart_time_point):
 
     # create formatter and add it to the handlers
     formatter = logging.Formatter('%(asctime)s|%(levelname)s|%(name)s|%(funcName)s(%(lineno)d)|%(message)s')
-    fh.setFormatter(formatter)
     ch.setFormatter(formatter)
 
     # add the handlers to the logger
-    logger.addHandler(fh)
     logger.addHandler(ch)
+
+
+def init_file_logging(logger, appstart_time_point):
+    # setup logger level
+    logger.setLevel(logging.DEBUG)
+
+    # create file handler which logs even debug messages, name based on appstart_time_point
+    fh = logging.FileHandler(AppName + appstart_time_point + '.log')
+    fh.setLevel(logging.DEBUG)
+
+    # create formatter and add it to the handlers
+    formatter = logging.Formatter('%(asctime)s|%(levelname)s|%(name)s|%(funcName)s(%(lineno)d)|%(message)s')
+    fh.setFormatter(formatter)
+
+    # add the handlers to the logger
+    logger.addHandler(fh)
+
+
+def create_file_storage(appstart_time_point):
+    # Dir for save cam frames
+    current_dir = os.getcwd()
+    store_dir = appstart_time_point
+    full_path = os.path.join(current_dir, store_dir)
+    logger.info('Define store dir full path: ' + full_path)
+    if not os.path.exists(full_path):
+        os.mkdir(full_path)
 
 def calculate_position(distance_mm, wheel_diameter, encoder_cpr):
     logger.debug('Function start')
@@ -67,52 +101,41 @@ def go_to_position(enc_count):
 # --- MAIN ---
 if __name__ == '__main__':
 
-    # get a main app start point
-    appstart_time_point = str(sys.argv[1])
+    init_console_logging(logger)
 
-    # Setup logging
-    init_logging(logger, appstart_time_point)
 
     # Set num of cam
     logger.info('Start app ' + AppName)
-
-    # Dir for save cam frames
-    current_dir = os.getcwd()
-    store_dir = appstart_time_point
-    full_path = os.path.join(current_dir, store_dir)
-    logger.info('Define store dir full path: ' + full_path)
-    if not os.path.exists(full_path):
-        os.mkdir(full_path)
-
-    # Connect to RoboClaw
-    logger.info('Open device num - '+str(DeviceNum))
-    roboclaw = RoboClaw(DeviceNum, 0x80)
-
-    # Set connection to REDIS
-    logger.info('Connect to processMon from ' + AppName + 'Processor')
-    processMon = Monitoring()
     logger.info('Set State to ' + AppState + ' for ' + AppName + 'Processor')
     processMon.set_processor_key(AppName, 'State', AppState)
 
     logger.info('Start loop')
-    isLoop = 1
-    while isLoop == 1:
+    isLoop = True
+    while isLoop :
 
         AppState = processMon.get_processor_key(AppName, 'State')
         if AppStateBefore != AppState:
             logger.info(AppName + 'Processor.State changed from ' + AppStateBefore + ' to ' + AppState)
-            AppStateBefore = AppState
+
 
         if AppState == 'active':
-            AppState = 'wait' # ToDo change to Navigate
-            processMon.set_processor_key(AppName, 'State', AppState)
+            # get a main app start point
+            appstart_time_point = processMon.get_processor_key(GlobalAppName, 'StartPoint')
+
+            # Setup logging
+            init_file_logging(logger, appstart_time_point)
+
+            # Setup folder for data files
+            create_file_storage(appstart_time_point)
 
         elif AppState == 'debug':
             AppState = 'wait'
             processMon.set_processor_key(AppName, 'State', AppState)
 
         elif AppState == 'stopped': # if True exit from loop
-            isLoop = 0
+            isLoop = False
+
+        AppStateBefore = AppState
 
     # Finish
     processMon.set_processor_key(AppName, 'State', 'stopped')

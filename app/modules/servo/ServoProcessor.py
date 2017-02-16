@@ -22,12 +22,22 @@ NavigationAppName='Navigation'
 GlobalAppName='Global'
 
 #Current app name and settings
+DeviceNum = '/dev/ttyACM1'
 AppName= 'Servo'
 AppState = 'wait'
 AppStateBefore = AppState
-GateState = 'close'
 
-DeviceNum = '/dev/ttyACM1'
+# --- Create global classes
+# create logger
+logger = logging.getLogger(AppName + 'Processor')
+try:
+    # Connect to servo controller
+    logger.info('Open device num - ' + str(DeviceNum))
+    servo = ServoController(DeviceNum)
+except:
+    AppState = 'error'
+
+GateState = 'close'
 ServoSpeed=0 # Unlimited by SW, as speed as possible
 ServoAccel=0 # Unlimited by SW, as speed as possible
 
@@ -41,16 +51,12 @@ SEP_BLU_OPEN_POS = 3000  # Separator sort to BLUE
 GT_RED_OPEN_POS = 4000   # Gate for RED store open
 GT_BLU_OPEN_POS = 8000   # Gate for BLUE store open
 
-# create logger
-logger = logging.getLogger(AppName + 'Processor')
 
-def init_logging(logger, appstart_time_point):
+
+
+def init_console_logging(logger):
     # setup logger level
     logger.setLevel(logging.DEBUG)
-
-    # create file handler which logs even debug messages, name based on appstart_time_point
-    fh = logging.FileHandler(AppName + appstart_time_point + '.log')
-    fh.setLevel(logging.DEBUG)
 
     # create console handler with a debug log level
     ch = logging.StreamHandler()
@@ -58,12 +64,27 @@ def init_logging(logger, appstart_time_point):
 
     # create formatter and add it to the handlers
     formatter = logging.Formatter('%(asctime)s|%(levelname)s|%(name)s|%(funcName)s(%(lineno)d)|%(message)s')
-    fh.setFormatter(formatter)
     ch.setFormatter(formatter)
 
     # add the handlers to the logger
-    logger.addHandler(fh)
     logger.addHandler(ch)
+
+
+def init_file_logging(logger, appstart_time_point):
+    # setup logger level
+    logger.setLevel(logging.DEBUG)
+
+    # create file handler which logs even debug messages, name based on appstart_time_point
+    fh = logging.FileHandler(AppName + appstart_time_point + '.log')
+    fh.setLevel(logging.DEBUG)
+
+    # create formatter and add it to the handlers
+    formatter = logging.Formatter('%(asctime)s|%(levelname)s|%(name)s|%(funcName)s(%(lineno)d)|%(message)s')
+    fh.setFormatter(formatter)
+
+    # add the handlers to the logger
+    logger.addHandler(fh)
+
 
 def get_color_list(procmon):
     colors = [procmon.get_processor_key(ColorProcessorAppName, 'left_color'),
@@ -141,7 +162,8 @@ if __name__ == '__main__':
     appstart_time_point = str(sys.argv[1])
 
     # Setup logging
-    init_logging(logger, appstart_time_point)
+    init_console_logging(logger)
+    init_file_logging(logger, appstart_time_point)
 
     # Set num of cam
     logger.info('Start app ' + AppName)
@@ -153,22 +175,21 @@ if __name__ == '__main__':
     logger.info('Define store dir full path: ' + full_path)
     if not os.path.exists(full_path):
         os.mkdir(full_path)
-
-    # Connect to servo controller
-    logger.info('Open device num - ' + str(DeviceNum))
-    servo = ServoController(DeviceNum)
-    logger.info('Init CH: ' + str(SRV_SEP_CHANEL) +' POS: '+ str(SRV_NEUTRAL_POS))
-    servo.setTarget(SRV_SEP_CHANEL, SRV_NEUTRAL_POS)
-    servo.setAccel(SRV_SEP_CHANEL, ServoAccel)
-    servo.setSpeed(SRV_SEP_CHANEL, ServoSpeed)
-    logger.info('Init CH: ' + str(SRV_RED_CHANEL) + ' POS: ' + str(SRV_NEUTRAL_POS))
-    servo.setTarget(SRV_RED_CHANEL, SRV_NEUTRAL_POS)
-    servo.setAccel(SRV_RED_CHANEL, ServoAccel)
-    servo.setSpeed(SRV_RED_CHANEL, ServoSpeed)
-    logger.info('Init CH: ' + str(SRV_BLU_CHANEL) + ' POS: ' + str(SRV_NEUTRAL_POS))
-    servo.setTarget(SRV_BLU_CHANEL, SRV_NEUTRAL_POS)
-    servo.setAccel(SRV_BLU_CHANEL, ServoAccel)
-    servo.setSpeed(SRV_BLU_CHANEL, ServoSpeed)
+    try:
+        logger.info('Init CH: ' + str(SRV_SEP_CHANEL) +' POS: '+ str(SRV_NEUTRAL_POS))
+        servo.setTarget(SRV_SEP_CHANEL, SRV_NEUTRAL_POS)
+        servo.setAccel(SRV_SEP_CHANEL, ServoAccel)
+        servo.setSpeed(SRV_SEP_CHANEL, ServoSpeed)
+        logger.info('Init CH: ' + str(SRV_RED_CHANEL) + ' POS: ' + str(SRV_NEUTRAL_POS))
+        servo.setTarget(SRV_RED_CHANEL, SRV_NEUTRAL_POS)
+        servo.setAccel(SRV_RED_CHANEL, ServoAccel)
+        servo.setSpeed(SRV_RED_CHANEL, ServoSpeed)
+        logger.info('Init CH: ' + str(SRV_BLU_CHANEL) + ' POS: ' + str(SRV_NEUTRAL_POS))
+        servo.setTarget(SRV_BLU_CHANEL, SRV_NEUTRAL_POS)
+        servo.setAccel(SRV_BLU_CHANEL, ServoAccel)
+        servo.setSpeed(SRV_BLU_CHANEL, ServoSpeed)
+    except:
+        AppState = 'error'
 
     # Set connection to REDIS
     logger.info('Connect to processMon from ' + AppName + 'Processor')

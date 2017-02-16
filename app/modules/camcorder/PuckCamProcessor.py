@@ -24,13 +24,9 @@ AppStateBefore = AppState
 # create logger
 logger = logging.getLogger(AppName + 'Processor')
 
-def init_logging(logger, appstart_time_point):
+def init_console_logging(logger):
     # setup logger level
     logger.setLevel(logging.DEBUG)
-
-    # create file handler which logs even debug messages, name based on appstart_time_point
-    fh = logging.FileHandler(AppName + appstart_time_point + '.log')
-    fh.setLevel(logging.DEBUG)
 
     # create console handler with a debug log level
     ch = logging.StreamHandler()
@@ -38,12 +34,27 @@ def init_logging(logger, appstart_time_point):
 
     # create formatter and add it to the handlers
     formatter = logging.Formatter('%(asctime)s|%(levelname)s|%(name)s|%(funcName)s(%(lineno)d)|%(message)s')
-    fh.setFormatter(formatter)
     ch.setFormatter(formatter)
 
     # add the handlers to the logger
-    logger.addHandler(fh)
     logger.addHandler(ch)
+
+
+def init_file_logging(logger, appstart_time_point):
+    # setup logger level
+    logger.setLevel(logging.DEBUG)
+
+    # create file handler which logs even debug messages, name based on appstart_time_point
+    fh = logging.FileHandler(AppName + appstart_time_point + '.log')
+    fh.setLevel(logging.DEBUG)
+
+    # create formatter and add it to the handlers
+    formatter = logging.Formatter('%(asctime)s|%(levelname)s|%(name)s|%(funcName)s(%(lineno)d)|%(message)s')
+    fh.setFormatter(formatter)
+
+    # add the handlers to the logger
+    logger.addHandler(fh)
+
 
 # Function returns the color of area based on the everaged colors of the ares
 def determine_area_color(x1, x2, y1, y2, area, domination):
@@ -121,7 +132,8 @@ if __name__ == '__main__':
     appstart_time_point = str(sys.argv[1])
 
     # Setup logging
-    init_logging(logger, appstart_time_point)
+    init_console_logging(logger)
+    init_file_logging(logger, appstart_time_point)
 
     # Set num of cam
     logger.info('Start app ' + AppName)
@@ -151,8 +163,8 @@ if __name__ == '__main__':
 
 
     logger.info('Start loop')
-    isLoop = 1
-    while isLoop == 1:
+    isLoop = True
+    while isLoop :
         is_sucessfully_read = False
 
         # Grab a frame from the camera
@@ -172,7 +184,7 @@ if __name__ == '__main__':
             processMon.set_processor_key(AppName, 'State', AppState)
 
         elif AppState == 'stopped': # if True exit from loop
-            isLoop = 0
+            isLoop = False
 
     # And don't forget to release the camera!
     PuckCamcorder.release()

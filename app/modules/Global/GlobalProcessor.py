@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
 #  Import openCV libraries
-import cv2
 import datetime
 import os
 import sys
 import logging
+import math
 # Load PCR modules from ../
 modules_path=os.path.dirname(sys.argv[0])
 if len(modules_path) <= 1:  # 0 or 1 equal sterted from current dir
@@ -16,10 +16,11 @@ sys.path.append(modules_path)
 from processors.monitoring import Monitoring
 # Complete load PCR modules
 
-DeviceNum = 0
-AppName= 'FrontCam'
+DeviceNum = ''
+AppName= 'Global'
 AppState = 'wait'
 AppStateBefore = AppState
+
 
 # create logger
 logger = logging.getLogger(AppName + 'Processor')
@@ -56,72 +57,59 @@ def init_file_logging(logger, appstart_time_point):
     logger.addHandler(fh)
 
 
+def calculate_position(distance_mm, wheel_diameter, encoder_cpr):
+    logger.debug('Function start')
+    return int((distance_mm / (math.pi * wheel_diameter) * encoder_cpr))
+
+def go_to_position(enc_count):
+    logger.debug('Function start')
+    # go forward distance by encoders
+    # roboclaw.SpeedAccelDeccelPositionM1M2(MC_ADDRES, 5660, 5660, 5660, enc_count, 5660, 5660, 5660, enc_count, 0)
+    roboclaw.drive_to_position_raw(motor=MotorLeft, accel=0, speed=0, deccel=0, position=enc_count, buffer=1)
+    roboclaw.drive_to_position_raw(motor=MotorRight, accel=0, speed=0, deccel=0, position=enc_count, buffer=1)
+
+
 # --- MAIN ---
 if __name__ == '__main__':
 
-    # get a main app start point
-    appstart_time_point = str(sys.argv[1])
-
-    # Setup logging
-    init_console_logging(logger)
-    init_file_logging(logger, appstart_time_point)
-
     # Set num of cam
+    init_console_logging(logger)
     logger.info('Start app ' + AppName)
-
-    # Dir for save cam frames
-    current_dir = os.getcwd()
-    store_dir = appstart_time_point
-    full_path = os.path.join(current_dir, store_dir)
-    logger.info('Define store dir full path: ' + full_path)
-    if not os.path.exists(full_path):
-        os.mkdir(full_path)
-
-    # Connect to video camera
-    logger.info('Open video device num - ' + str(DeviceNum))
-    FrontCamcorder = cv2.VideoCapture(DeviceNum)
-
-    # Set some paramiters of capture webcam
-    FrontCamcorder.set(cv2.cv.CV_CAP_PROP_FPS, 5)
-    # PuckCamcorder.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1280)
-    # PuckCamcorder.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 720)
 
     # Set connection to REDIS
     logger.info('Connect to processMon from ' + AppName + 'Processor')
     processMon = Monitoring()
-    logger.info('Set State to wait for ' + AppName + 'Processor')
+    logger.info('Set State to ' + AppState + ' for ' + AppName + 'Processor')
     processMon.set_processor_key(AppName, 'State', AppState)
 
-
-    logger.info('Start capturing loop')
-    isLoop = 1
-    while isLoop == 1:
-        is_sucessfully_read = False
-
-        # Grab a frame from the camera
-        is_sucessfully_read, img = FrontCamcorder.read()
+    logger.info('Start loop')
+    isLoop = True
+    while isLoop :
 
         AppState = processMon.get_processor_key(AppName, 'State')
         if AppStateBefore != AppState:
             logger.info(AppName + 'Processor.State changed from ' + AppStateBefore + ' to ' + AppState)
             AppStateBefore = AppState
 
-        if AppState == 'active' or AppState == 'debug':
-            if is_sucessfully_read:
-                # generate file name based on current time
-                file_name = datetime.datetime.now().strftime(AppName + "_%Y%m%d_%H%M%S.%f") + '.png'
+        if AppState == 'active' or AppState == 'debug': # One time execution
+            # get a main app start point
+            appstart_time_point = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
 
-                # Write the image to the file
-                cv2.imwrite(os.path.join(full_path, file_name), img)
-            else:
-                logger.error(AppName + ' Cannot read video capture')
-                processMon.set_processor_key(AppName, 'State', 'error')
+            # Setup logging
+            init_file_logging(logger, appstart_time_point)
+
+            # save start time point
+            logger.info('Set ' + AppName + '.StartPoint to ' + appstart_time_point)
+            processMon.set_processor_key(AppName, 'StartPoint', appstart_time_point)
+
+
+            AppState = 'wait' # ToDo change to Navigate
+            processMon.set_processor_key(AppName, 'State', AppState)
+
         elif AppState == 'stopped': # if True exit from loop
-            isLoop = 0
+            isLoop = False
 
-
-    # And don't forget to release the camera!
-    FrontCamcorder.release()
+    # Finish
     processMon.set_processor_key(AppName, 'State', 'stopped')
     logger.info('Stop application')
 
