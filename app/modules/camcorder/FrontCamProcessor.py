@@ -55,20 +55,7 @@ def init_file_logging(logger, appstart_time_point):
     # add the handlers to the logger
     logger.addHandler(fh)
 
-
-# --- MAIN ---
-if __name__ == '__main__':
-
-    # get a main app start point
-    appstart_time_point = str(sys.argv[1])
-
-    # Setup logging
-    init_console_logging(logger)
-    init_file_logging(logger, appstart_time_point)
-
-    # Set num of cam
-    logger.info('Start app ' + AppName)
-
+def create_file_storage(appstart_time_point):
     # Dir for save cam frames
     current_dir = os.getcwd()
     store_dir = appstart_time_point
@@ -76,6 +63,15 @@ if __name__ == '__main__':
     logger.info('Define store dir full path: ' + full_path)
     if not os.path.exists(full_path):
         os.mkdir(full_path)
+
+# --- MAIN ---
+if __name__ == '__main__':
+
+    # Setup logging
+    init_console_logging(logger)
+
+    # Set num of cam
+    logger.info('Start app ' + AppName)
 
     # Connect to video camera
     logger.info('Open video device num - ' + str(DeviceNum))
@@ -107,6 +103,11 @@ if __name__ == '__main__':
             AppStateBefore = AppState
 
         if AppState == 'active' or AppState == 'debug':
+            # get a main app start point
+            appstart_time_point = str(sys.argv[1])
+            init_file_logging(logger, appstart_time_point)
+            create_file_storage(appstart_time_point)
+
             if is_sucessfully_read:
                 # generate file name based on current time
                 file_name = datetime.datetime.now().strftime(AppName + "_%Y%m%d_%H%M%S.%f") + '.png'

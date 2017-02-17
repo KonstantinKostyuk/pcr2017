@@ -24,6 +24,8 @@ AppStateBefore = AppState
 
 # create logger
 logger = logging.getLogger(AppName + 'Processor')
+processMon = Monitoring()
+
 
 def init_console_logging(logger):
     # setup logger level
@@ -56,18 +58,14 @@ def init_file_logging(logger, appstart_time_point):
     # add the handlers to the logger
     logger.addHandler(fh)
 
-
-def calculate_position(distance_mm, wheel_diameter, encoder_cpr):
-    logger.debug('Function start')
-    return int((distance_mm / (math.pi * wheel_diameter) * encoder_cpr))
-
-def go_to_position(enc_count):
-    logger.debug('Function start')
-    # go forward distance by encoders
-    # roboclaw.SpeedAccelDeccelPositionM1M2(MC_ADDRES, 5660, 5660, 5660, enc_count, 5660, 5660, 5660, enc_count, 0)
-    roboclaw.drive_to_position_raw(motor=MotorLeft, accel=0, speed=0, deccel=0, position=enc_count, buffer=1)
-    roboclaw.drive_to_position_raw(motor=MotorRight, accel=0, speed=0, deccel=0, position=enc_count, buffer=1)
-
+def create_file_storage(appstart_time_point):
+    # Dir for save cam frames
+    current_dir = os.getcwd()
+    store_dir = appstart_time_point
+    full_path = os.path.join(current_dir, store_dir)
+    logger.info('Define store dir full path: ' + full_path)
+    if not os.path.exists(full_path):
+        os.mkdir(full_path)
 
 # --- MAIN ---
 if __name__ == '__main__':
@@ -76,9 +74,7 @@ if __name__ == '__main__':
     init_console_logging(logger)
     logger.info('Start app ' + AppName)
 
-    # Set connection to REDIS
-    logger.info('Connect to processMon from ' + AppName + 'Processor')
-    processMon = Monitoring()
+    # save state to storage
     logger.info('Set State to ' + AppState + ' for ' + AppName + 'Processor')
     processMon.set_processor_key(AppName, 'State', AppState)
 
@@ -97,13 +93,19 @@ if __name__ == '__main__':
 
             # Setup logging
             init_file_logging(logger, appstart_time_point)
+            create_file_storage(appstart_time_point)
 
-            # save start time point
+            # init start time point
             logger.info('Set ' + AppName + '.StartPoint to ' + appstart_time_point)
             processMon.set_processor_key(AppName, 'StartPoint', appstart_time_point)
 
+            # init Global values and save to storage
+            processMon.set_processor_key(AppName, 'blue', 0)
+            processMon.set_processor_key(AppName, 'red', 0)
+            processMon.set_processor_key(AppName, 'BaseColor', 'blue')
 
-            AppState = 'wait' # ToDo change to Navigate
+
+            AppState = 'wait' #
             processMon.set_processor_key(AppName, 'State', AppState)
 
         elif AppState == 'stopped': # if True exit from loop

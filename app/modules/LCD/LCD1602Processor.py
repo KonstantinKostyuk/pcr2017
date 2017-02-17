@@ -55,7 +55,14 @@ def init_file_logging(logger, appstart_time_point):
     # add the handlers to the logger
     logger.addHandler(fh)
 
-
+def create_file_storage(appstart_time_point):
+    # Dir for save cam frames
+    current_dir = os.getcwd()
+    store_dir = appstart_time_point
+    full_path = os.path.join(current_dir, store_dir)
+    logger.info('Define store dir full path: ' + full_path)
+    if not os.path.exists(full_path):
+        os.mkdir(full_path)
 
 def print_to_lcd(procmon, lcd1602):
     lcdRed = int(procmon.get_processor_key(AppName, 'Red'))
@@ -73,23 +80,11 @@ def print_to_lcd(procmon, lcd1602):
 # --- MAIN ---
 if __name__ == '__main__':
 
-    # get a main app start point
-    appstart_time_point = str(sys.argv[1])
-
     # Setup logging
     init_console_logging(logger)
-    init_file_logging(logger, appstart_time_point)
 
     # Set num of cam
     logger.info('Start app ' + AppName)
-
-    # Dir for save cam frames
-    current_dir = os.getcwd()
-    store_dir = appstart_time_point
-    full_path = os.path.join(current_dir, store_dir)
-    logger.info('Define store dir full path: ' + full_path)
-    if not os.path.exists(full_path):
-        os.mkdir(full_path)
 
     # Connect to LCD
     logger.info('Open I2C device num - ' + str(DeviceNum))
@@ -115,6 +110,11 @@ if __name__ == '__main__':
             AppStateBefore = AppState
 
         if AppState == 'active':
+            # get a main app start point
+            appstart_time_point = str(sys.argv[1])
+            init_file_logging(logger, appstart_time_point)
+            create_file_storage(appstart_time_point)
+
             print_to_lcd(processMon, lcd)
 
         elif AppState == 'debug':

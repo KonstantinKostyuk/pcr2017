@@ -86,6 +86,16 @@ def init_file_logging(logger, appstart_time_point):
     logger.addHandler(fh)
 
 
+def create_file_storage(appstart_time_point):
+    # Dir for save cam frames
+    current_dir = os.getcwd()
+    store_dir = appstart_time_point
+    full_path = os.path.join(current_dir, store_dir)
+    logger.info('Define store dir full path: ' + full_path)
+    if not os.path.exists(full_path):
+        os.mkdir(full_path)
+
+
 def get_color_list(procmon):
     colors = [procmon.get_processor_key(ColorProcessorAppName, 'left_color'),
               procmon.get_processor_key(ColorProcessorAppName, 'middle_color'),
@@ -158,23 +168,12 @@ def active_iteration(proc_mon, gate_state_before):
 # --- MAIN ---
 if __name__ == '__main__':
 
-    # get a main app start point
-    appstart_time_point = str(sys.argv[1])
-
     # Setup logging
     init_console_logging(logger)
-    init_file_logging(logger, appstart_time_point)
 
     # Set num of cam
     logger.info('Start app ' + AppName)
 
-    # Dir for save
-    current_dir = os.getcwd()
-    store_dir = appstart_time_point
-    full_path = os.path.join(current_dir, store_dir)
-    logger.info('Define store dir full path: ' + full_path)
-    if not os.path.exists(full_path):
-        os.mkdir(full_path)
     try:
         logger.info('Init CH: ' + str(SRV_SEP_CHANEL) +' POS: '+ str(SRV_NEUTRAL_POS))
         servo.setTarget(SRV_SEP_CHANEL, SRV_NEUTRAL_POS)
@@ -206,6 +205,12 @@ if __name__ == '__main__':
             AppStateBefore = AppState
 
         if AppState == 'active': # active state start
+
+            # get a main app start point
+            appstart_time_point = str(sys.argv[1])
+            init_file_logging(logger, appstart_time_point)
+            create_file_storage(appstart_time_point)
+
             GateState = active_iteration(processMon, GateState)
             # active state complete
 
