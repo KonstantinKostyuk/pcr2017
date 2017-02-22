@@ -70,6 +70,7 @@ if __name__ == '__main__':
         elif AppState == 'stopped': # if True exit from loop
             isLoop = 0
 
+        processMon.update_app_state_before()
 
     # And don't forget to release the camera!
     FrontCamcorder.release()
