@@ -16,62 +16,16 @@ sys.path.append(modules_path)
 from processors.monitoring import Monitoring
 # Complete load PCR modules
 
-DeviceNum = 0
-AppName= 'FrontCam'
-AppState = 'wait'
-AppStateBefore = AppState
 
-# create logger
-logger = logging.getLogger(AppName + 'Processor')
+# --- Create global classes
+processMon = Monitoring(app_name='FrontCam', device_num='0', app_state='wait')
 
-def init_console_logging(logger):
-    # setup logger level
-    logger.setLevel(logging.DEBUG)
-
-    # create console handler with a debug log level
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter('%(asctime)s|%(levelname)s|%(name)s|%(funcName)s(%(lineno)d)|%(message)s')
-    ch.setFormatter(formatter)
-
-    # add the handlers to the logger
-    logger.addHandler(ch)
-
-
-def init_file_logging(logger, appstart_time_point):
-    # setup logger level
-    logger.setLevel(logging.DEBUG)
-
-    # create file handler which logs even debug messages, name based on appstart_time_point
-    fh = logging.FileHandler(AppName + appstart_time_point + '.log')
-    fh.setLevel(logging.DEBUG)
-
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter('%(asctime)s|%(levelname)s|%(name)s|%(funcName)s(%(lineno)d)|%(message)s')
-    fh.setFormatter(formatter)
-
-    # add the handlers to the logger
-    logger.addHandler(fh)
-
-def create_file_storage(appstart_time_point):
-    # Dir for save cam frames
-    current_dir = os.getcwd()
-    store_dir = appstart_time_point
-    full_path = os.path.join(current_dir, store_dir)
-    logger.info('Define store dir full path: ' + full_path)
-    if not os.path.exists(full_path):
-        os.mkdir(full_path)
 
 # --- MAIN ---
 if __name__ == '__main__':
 
-    # Setup logging
-    init_console_logging(logger)
-
-    # Set num of cam
-    logger.info('Start app ' + AppName)
+    # Start app
+    processMon.logger.info('Start app ' + processMon.AppName)
 
     # Connect to video camera
     logger.info('Open video device num - ' + str(DeviceNum))
@@ -82,16 +36,11 @@ if __name__ == '__main__':
     # PuckCamcorder.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1280)
     # PuckCamcorder.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 720)
 
-    # Set connection to REDIS
-    logger.info('Connect to processMon from ' + AppName + 'Processor')
-    processMon = Monitoring()
-    logger.info('Set State to wait for ' + AppName + 'Processor')
-    processMon.set_processor_key(AppName, 'State', AppState)
 
+    processMon.logger.info('Start loop')
+    isLoop = True
+    while isLoop :
 
-    logger.info('Start capturing loop')
-    isLoop = 1
-    while isLoop == 1:
         is_sucessfully_read = False
 
         # Grab a frame from the camera
@@ -106,7 +55,8 @@ if __name__ == '__main__':
             # get a main app start point
             appstart_time_point = str(sys.argv[1])
             init_file_logging(logger, appstart_time_point)
-            create_file_storage(appstart_time_point)
+            logger.info('Define store dir - ' + appstart_time_point)
+            processMon.create_file_storage(appstart_time_point)
 
             if is_sucessfully_read:
                 # generate file name based on current time
@@ -123,6 +73,6 @@ if __name__ == '__main__':
 
     # And don't forget to release the camera!
     FrontCamcorder.release()
-    processMon.set_processor_key(AppName, 'State', 'stopped')
+    processMon.set_processor_key(processMon.AppName, 'State', 'stopped')
     logger.info('Stop application')
 

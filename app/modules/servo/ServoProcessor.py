@@ -21,21 +21,14 @@ ColorProcessorAppName='PuckCam'
 NavigationAppName='Navigation'
 GlobalAppName='Global'
 
-#Current app name and settings
-DeviceNum = '/dev/ttyACM1'
-AppName= 'Servo'
-AppState = 'wait'
-AppStateBefore = AppState
-
 # --- Create global classes
-# create logger
-logger = logging.getLogger(AppName + 'Processor')
+processMon = Monitoring(app_name='Servo', device_num='/dev/ttyACM1', app_state='wait')
 try:
-    # Connect to servo controller
-    logger.info('Open device num - ' + str(DeviceNum))
-    servo = ServoController(DeviceNum)
+    # Connect to Maestro controller
+    processMon.logger.info('Open device num - ' + str(processMon.DeviceNum))
+    Maestro = ServoController(processMon.DeviceNum)
 except:
-    AppState = 'error'
+    processMon.set_app_state(state='error')  # set and save
 
 GateState = 'close'
 ServoSpeed=0 # Unlimited by SW, as speed as possible
@@ -53,103 +46,66 @@ GT_BLU_OPEN_POS = 8000   # Gate for BLUE store open
 
 
 
-
-def init_console_logging(logger):
-    # setup logger level
-    logger.setLevel(logging.DEBUG)
-
-    # create console handler with a debug log level
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter('%(asctime)s|%(levelname)s|%(name)s|%(funcName)s(%(lineno)d)|%(message)s')
-    ch.setFormatter(formatter)
-
-    # add the handlers to the logger
-    logger.addHandler(ch)
-
-
-def init_file_logging(logger, appstart_time_point):
-    # setup logger level
-    logger.setLevel(logging.DEBUG)
-
-    # create file handler which logs even debug messages, name based on appstart_time_point
-    fh = logging.FileHandler(AppName + appstart_time_point + '.log')
-    fh.setLevel(logging.DEBUG)
-
-    # create formatter and add it to the handlers
-    formatter = logging.Formatter('%(asctime)s|%(levelname)s|%(name)s|%(funcName)s(%(lineno)d)|%(message)s')
-    fh.setFormatter(formatter)
-
-    # add the handlers to the logger
-    logger.addHandler(fh)
-
-
-def create_file_storage(appstart_time_point):
-    # Dir for save cam frames
-    current_dir = os.getcwd()
-    store_dir = appstart_time_point
-    full_path = os.path.join(current_dir, store_dir)
-    logger.info('Define store dir full path: ' + full_path)
-    if not os.path.exists(full_path):
-        os.mkdir(full_path)
-
-
-def get_color_list(procmon):
-    colors = [procmon.get_processor_key(ColorProcessorAppName, 'left_color'),
-              procmon.get_processor_key(ColorProcessorAppName, 'middle_color'),
-              procmon.get_processor_key(ColorProcessorAppName, 'right_color')]
+def get_color_list(proc_mon):
+    colors = [proc_mon.get_processor_key(ColorProcessorAppName, 'left_color'),
+              proc_mon.get_processor_key(ColorProcessorAppName, 'middle_color'),
+              proc_mon.get_processor_key(ColorProcessorAppName, 'right_color')]
     return colors
 
-def get_puck_color(procmon, list_colors):
+
+def get_puck_color(proc_mon, list_colors):
     if list_colors[0] == list_colors[1] and list_colors[1] == list_colors[2]:
-        procmon.set_processor_key(NavigationAppName, 'Base', list_colors[1])
+        proc_mon.set_processor_key(NavigationAppName, 'Base', list_colors[1])
         return 'none'
     elif list_colors[0] != list_colors[1] and list_colors[1] != list_colors[2]:
-        procmon.set_processor_key(NavigationAppName, 'Base', 'white')
+        proc_mon.set_processor_key(NavigationAppName, 'Base', 'white')
         return list_colors[1]
     else:
-        procmon.set_processor_key(NavigationAppName, 'Base', 'white')
+        proc_mon.set_processor_key(NavigationAppName, 'Base', 'white')
         return 'none'
 
-def sort_pucks(puck_color, direction):
+
+def sort_pucks(proc_mon, puck_color, direction):
     if (puck_color == 'blue') and direction == 'FWD':
         # blue
-        logger.info('Sort the ' +puck_color+ ' puck.')
-        servo.setTarget(SRV_SEP_CHANEL, SEP_BLU_OPEN_POS)
+        proc_mon.logger.info('Sort the ' + puck_color + ' puck.')
+        Maestro.setTarget(SRV_SEP_CHANEL, SEP_BLU_OPEN_POS)
         time.sleep(1)
-        servo.setTarget(SRV_SEP_CHANEL, SRV_NEUTRAL_POS)
+        Maestro.setTarget(SRV_SEP_CHANEL, SRV_NEUTRAL_POS)
         return puck_color
     elif (puck_color == 'red') and direction == 'FWD':
         # red
-        logger.info('Sort the ' + puck_color + ' puck.')
-        servo.setTarget(SRV_SEP_CHANEL, SEP_RED_OPEN_POS)
+        proc_mon.logger.info('Sort the ' + puck_color + ' puck.')
+        Maestro.setTarget(SRV_SEP_CHANEL, SEP_RED_OPEN_POS)
         time.sleep(1)
-        servo.setTarget(SRV_SEP_CHANEL, SRV_NEUTRAL_POS)
+        Maestro.setTarget(SRV_SEP_CHANEL, SRV_NEUTRAL_POS)
         return puck_color
     else:
         return 'none'
 
-def release_red():
-    logger.debug('Open RED gate')
+
+def release_red(proc_mon, servo):
+    proc_mon.logger.debug('Open RED gate')
     servo.setTarget(SRV_RED_CHANEL, GT_RED_OPEN_POS)
 
-def release_blue():
-    logger.debug('Open BLUE gate')
+
+def release_blue(proc_mon, servo):
+    proc_mon.logger.debug('Open BLUE gate')
     servo.setTarget(SRV_BLU_CHANEL, GT_BLU_OPEN_POS)
 
-def close_gates():
-    logger.debug('Close gates')
+
+def close_gates(proc_mon, servo):
+    proc_mon.logger.debug('Close gates')
     servo.setTarget(SRV_RED_CHANEL, SRV_NEUTRAL_POS)
     servo.setTarget(SRV_BLU_CHANEL, SRV_NEUTRAL_POS)
 
-def active_iteration(proc_mon, gate_state_before):
+
+def active_iteration(proc_mon, servo, gate_state_before):
     # Control separating
     list_colors = get_color_list(proc_mon)  # get list of colors from PuckCam
     puck_color = get_puck_color(proc_mon, list_colors)  # detect puck and color
     if puck_color != 'none':  # if not 'none' sorting
-        sort_result = sort_pucks(puck_color, proc_mon.get_processor_key(NavigationAppName, 'Direction'))
+        sort_result = sort_pucks(proc_mon, puck_color, proc_mon.get_processor_key(NavigationAppName, 'Direction'))
         if sort_result != 'none':
             proc_mon.set_processor_key(GlobalAppName, sort_result,
                                          int(proc_mon.get_processor_key(GlobalAppName, sort_result)) + 1)
@@ -157,72 +113,66 @@ def active_iteration(proc_mon, gate_state_before):
     # Control gates
     gate_state = proc_mon.get_processor_key(NavigationAppName, 'Gate')
     if gate_state_before != gate_state and gate_state == 'close':
-        close_gates()
+        close_gates(proc_mon, servo)
     elif gate_state_before != gate_state and gate_state == 'red':
-        release_red()
+        release_red(proc_mon, servo)
     elif gate_state_before != gate_state and gate_state == 'blue':
-        release_blue()
+        release_blue(proc_mon, servo)
     return gate_state
 
 
 # --- MAIN ---
 if __name__ == '__main__':
 
-    # Setup logging
-    init_console_logging(logger)
-
-    # Set num of cam
-    logger.info('Start app ' + AppName)
+    # Start app
+    processMon.logger.info('Start app ' + processMon.AppName)
 
     try:
-        logger.info('Init CH: ' + str(SRV_SEP_CHANEL) +' POS: '+ str(SRV_NEUTRAL_POS))
-        servo.setTarget(SRV_SEP_CHANEL, SRV_NEUTRAL_POS)
-        servo.setAccel(SRV_SEP_CHANEL, ServoAccel)
-        servo.setSpeed(SRV_SEP_CHANEL, ServoSpeed)
-        logger.info('Init CH: ' + str(SRV_RED_CHANEL) + ' POS: ' + str(SRV_NEUTRAL_POS))
-        servo.setTarget(SRV_RED_CHANEL, SRV_NEUTRAL_POS)
-        servo.setAccel(SRV_RED_CHANEL, ServoAccel)
-        servo.setSpeed(SRV_RED_CHANEL, ServoSpeed)
-        logger.info('Init CH: ' + str(SRV_BLU_CHANEL) + ' POS: ' + str(SRV_NEUTRAL_POS))
-        servo.setTarget(SRV_BLU_CHANEL, SRV_NEUTRAL_POS)
-        servo.setAccel(SRV_BLU_CHANEL, ServoAccel)
-        servo.setSpeed(SRV_BLU_CHANEL, ServoSpeed)
+        # init
+        processMon.logger.info('Init CH: ' + str(SRV_SEP_CHANEL) +' POS: '+ str(SRV_NEUTRAL_POS))
+        Maestro.setTarget(SRV_SEP_CHANEL, SRV_NEUTRAL_POS)
+        Maestro.setAccel(SRV_SEP_CHANEL, ServoAccel)
+        Maestro.setSpeed(SRV_SEP_CHANEL, ServoSpeed)
+        processMon.logger.info('Init CH: ' + str(SRV_RED_CHANEL) + ' POS: ' + str(SRV_NEUTRAL_POS))
+        Maestro.setTarget(SRV_RED_CHANEL, SRV_NEUTRAL_POS)
+        Maestro.setAccel(SRV_RED_CHANEL, ServoAccel)
+        Maestro.setSpeed(SRV_RED_CHANEL, ServoSpeed)
+        processMon.logger.info('Init CH: ' + str(SRV_BLU_CHANEL) + ' POS: ' + str(SRV_NEUTRAL_POS))
+        Maestro.setTarget(SRV_BLU_CHANEL, SRV_NEUTRAL_POS)
+        Maestro.setAccel(SRV_BLU_CHANEL, ServoAccel)
+        Maestro.setSpeed(SRV_BLU_CHANEL, ServoSpeed)
     except:
-        AppState = 'error'
+        processMon.set_app_state(state='error') # set and save
 
-    # Set connection to REDIS
-    logger.info('Connect to processMon from ' + AppName + 'Processor')
-    processMon = Monitoring()
-    logger.info('Set State to wait for ' + AppName + 'Processor')
-    processMon.set_processor_key(AppName, 'State', AppState)
-
-    logger.info('Start application loop')
+    processMon.logger.info('Start loop')
     isLoop = True
     while isLoop :
-        AppState = processMon.get_processor_key(AppName, 'State')
-        if AppStateBefore != AppState:
-            logger.info(AppName + 'Processor.State changed from ' + AppStateBefore + ' to ' + AppState)
-            AppStateBefore = AppState
 
-        if AppState == 'active': # active state start
+        #Get current state from Redis and update processMon.AppState
+        processMon.get_app_state()
 
+        if processMon.AppState == 'active': # active state start
             # get a main app start point
-            appstart_time_point = str(sys.argv[1])
-            init_file_logging(logger, appstart_time_point)
-            create_file_storage(appstart_time_point)
+            appstart_time_point = processMon.get_processor_key(processMon.AppName, 'StartPoint')
+            # Setup logging
+            processMon.init_file_logging(appstart_time_point)
+            processMon.logger.info('Define store dir - ' + appstart_time_point)
+            processMon.create_file_storage(appstart_time_point)
 
-            GateState = active_iteration(processMon, GateState)
+            GateState = active_iteration(processMon, Maestro, GateState)
             # active state complete
 
-        elif AppState == 'debug': # debug state start
-            GateState = active_iteration(processMon, GateState)
-            processMon.set_processor_key(AppName, 'State', 'wait')
+        elif processMon.AppState == 'debug': # debug state start
+            GateState = active_iteration(processMon, Maestro, GateState)
+            processMon.set_app_state(state='wait')
             # debug state complete
 
-        elif AppState == 'stopped': # if True exit from loop
+        elif processMon.AppState == 'stopped': # if True exit from loop
             isLoop = False
 
+        processMon.update_app_state_before()
+
     # Close application
-    processMon.set_processor_key(AppName, 'State', 'stopped')
-    logger.info('Stop application')
+    processMon.set_app_state(state='wait')
+    processMon.logger.info('Stop application')
 
