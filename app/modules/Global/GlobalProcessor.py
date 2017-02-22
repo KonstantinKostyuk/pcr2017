@@ -4,8 +4,6 @@
 import datetime
 import os
 import sys
-import logging
-import math
 # Load PCR modules from ../
 modules_path=os.path.dirname(sys.argv[0])
 if len(modules_path) <= 1:  # 0 or 1 equal sterted from current dir
@@ -37,7 +35,6 @@ if __name__ == '__main__':
 
             # Setup logging
             processMon.init_file_logging(appstart_time_point)
-            processMon.logger.info('Define store dir - ' + appstart_time_point)
             processMon.create_file_storage(appstart_time_point)
 
             # init start time point

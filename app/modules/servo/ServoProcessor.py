@@ -156,14 +156,20 @@ if __name__ == '__main__':
             appstart_time_point = processMon.get_processor_key(processMon.AppName, 'StartPoint')
             # Setup logging
             processMon.init_file_logging(appstart_time_point)
-            processMon.logger.info('Define store dir - ' + appstart_time_point)
             processMon.create_file_storage(appstart_time_point)
-
+            # State  iteration
             GateState = active_iteration(processMon, Maestro, GateState)
             # active state complete
 
         elif processMon.AppState == 'debug': # debug state start
+            # set a main app start point
+            appstart_time_point = 'debug'
+            # Setup logging
+            processMon.init_file_logging(appstart_time_point)
+            processMon.create_file_storage(appstart_time_point)
+            # State  iteration
             GateState = active_iteration(processMon, Maestro, GateState)
+            # Change state to wait
             processMon.set_app_state(state='wait')
             # debug state complete
 
@@ -172,7 +178,7 @@ if __name__ == '__main__':
 
         processMon.update_app_state_before()
 
-    # Close application
+    # Finish
     processMon.set_app_state(state='wait')
     processMon.logger.info('Stop application')
 

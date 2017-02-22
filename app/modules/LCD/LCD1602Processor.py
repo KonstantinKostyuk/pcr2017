@@ -16,17 +16,20 @@ from processors.monitoring import Monitoring
 # Complete load PCR modules
 from upm import pyupm_i2clcd as i2clcd
 
+#Used app names
+GlobalAppName='Global'
+
 # --- Create global classes
 processMon = Monitoring(app_name='LCD1602', device_num='6', app_state='wait') # I2C Bus number for LCD
 
 
-def print_to_lcd(procmon, lcd1602):
+def print_to_lcd(proc_mon, lcd1602):
     # get data from storage
-    lcdRed = int(procmon.get_processor_key(procmon.AppName, 'Red'))
-    lcdGreen = int(procmon.get_processor_key(procmon.AppName, 'Green'))
-    lcdBlue = int(procmon.get_processor_key(procmon.AppName, 'Blue'))
-    lcdLineA = procmon.get_processor_key(procmon.AppName, 'LineA')
-    lcdLineB = procmon.get_processor_key(procmon.AppName, 'LineB')
+    lcdRed = int(proc_mon.get_processor_key(proc_mon.AppName, 'Red'))
+    lcdGreen = int(proc_mon.get_processor_key(proc_mon.AppName, 'Green'))
+    lcdBlue = int(proc_mon.get_processor_key(proc_mon.AppName, 'Blue'))
+    lcdLineA = proc_mon.get_processor_key(proc_mon.AppName, 'LineA')
+    lcdLineB = proc_mon.get_processor_key(proc_mon.AppName, 'LineB')
     # send data to LCD
     lcd1602.setColor(lcdRed, lcdGreen, lcdBlue)
     lcd1602.setCursor(0, 0)
@@ -53,29 +56,36 @@ if __name__ == '__main__':
     isLoop = True
     while isLoop :
 
-        AppState = processMon.get_processor_key(AppName, 'State')
-        if AppStateBefore != AppState:
-            processMon.logger.info(AppName + 'Processor.State changed from ' + AppStateBefore + ' to ' + AppState)
-            AppStateBefore = AppState
+        # Get current state from Redis and update processMon.AppState
+        processMon.get_app_state()
 
-        if AppState == 'active':
+        if processMon.AppState == 'active':
             # get a main app start point
-            appstart_time_point = str(sys.argv[1])
-            init_file_logging(processMon.logger, appstart_time_point)
-            processMon.logger.info('Define store dir - ' + appstart_time_point)
+            appstart_time_point = processMon.get_processor_key(processMon.AppName, 'StartPoint')
+            # Setup logging
+            processMon.init_file_logging(appstart_time_point)
             processMon.create_file_storage(appstart_time_point)
-
+            # State  iteration
             print_to_lcd(processMon, lcd)
 
-        elif AppState == 'debug':
+        elif processMon.AppState == 'debug':
+            # set a main app start point
+            appstart_time_point = 'debug'
+            # Setup logging
+            processMon.init_file_logging(appstart_time_point)
+            processMon.create_file_storage(appstart_time_point)
+            # State  iteration
             print_to_lcd(processMon, lcd)
-            AppState = 'wait'
-            processMon.set_processor_key(AppName, 'State', AppState)
+            # Change state to wait
+            processMon.set_app_state(state='wait')
+            # debug state complete
 
-        elif AppState == 'stopped': # if True exit from loop
+        elif processMon.AppState == 'stopped': # if True exit from loop
             isLoop = False
 
-    # And don't forget to release the camera!
-    processMon.set_processor_key(processMon.AppName, 'State', 'stopped')
+        processMon.update_app_state_before()
+
+    # Finish
+    processMon.set_app_state(state='stopped')
     processMon.logger.info('Stop application')
 

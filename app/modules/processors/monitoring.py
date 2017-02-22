@@ -84,7 +84,7 @@ class Monitoring:
             self.logger.setLevel(logging.DEBUG)
 
             # create file handler which logs even debug messages, name based on appstart_time_point
-            fh = logging.FileHandler(self.AppName + appstart_time_point + '.log')
+            fh = logging.FileHandler(self.AppName+'-'+ appstart_time_point + '.log')
             fh.setLevel(logging.DEBUG)
 
             # create formatter and add it to the handlers
@@ -146,6 +146,7 @@ class Monitoring:
     function create  directory for save any information
     '''
     def create_file_storage(self, appstart_time_point):
+        self.logger.info('Define store dir - ' + appstart_time_point)
         current_dir = os.getcwd()
         store_dir = appstart_time_point
         full_path = os.path.join(current_dir, store_dir)
