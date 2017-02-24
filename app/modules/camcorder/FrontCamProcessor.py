@@ -20,6 +20,17 @@ from processors.monitoring import Monitoring
 # --- Create global classes
 processMon = Monitoring(app_name='FrontCam', device_num='0', app_state='wait')
 
+def img_processing(proc_mon, img, is_sucessfully):
+    if is_sucessfully:
+        # generate file name based on current time
+        file_name = datetime.datetime.now().strftime(proc_mon.AppName + "_%Y%m%d_%H%M%S.%f") + '.png'
+
+        # Write the image to the file
+        cv2.imwrite(os.path.join(full_path, file_name), img)
+    else:
+        proc_mon.logger.error(proc_mon.AppName + ' Cannot read video capture')
+        processMon.set_processor_key(proc_mon.AppName, 'State', 'error')
+
 
 # --- MAIN ---
 if __name__ == '__main__':
@@ -28,8 +39,8 @@ if __name__ == '__main__':
     processMon.logger.info('Start app ' + processMon.AppName)
 
     # Connect to video camera
-    logger.info('Open video device num - ' + str(DeviceNum))
-    FrontCamcorder = cv2.VideoCapture(DeviceNum)
+    processMon.logger.info('Open video device num - ' + str(processMon.processMon.DeviceNum))
+    FrontCamcorder = cv2.VideoCapture(processMon.DeviceNum)
 
     # Set some paramiters of capture webcam
     FrontCamcorder.set(cv2.cv.CV_CAP_PROP_FPS, 5)
@@ -46,27 +57,30 @@ if __name__ == '__main__':
         # Grab a frame from the camera
         is_sucessfully_read, img = FrontCamcorder.read()
 
-        AppState = processMon.get_processor_key(AppName, 'State')
-        if AppStateBefore != AppState:
-            logger.info(AppName + 'Processor.State changed from ' + AppStateBefore + ' to ' + AppState)
-            AppStateBefore = AppState
+        # Get current state from Redis and update processMon.AppState
+        processMon.get_app_state()
 
-        if AppState == 'active' or AppState == 'debug':
+        if processMon.AppState == 'active':
             # get a main app start point
-            appstart_time_point = str(sys.argv[1])
-            init_file_logging(logger, appstart_time_point)
-            logger.info('Define store dir - ' + appstart_time_point)
+            appstart_time_point = processMon.get_processor_key(processMon.AppName, 'StartPoint')
+            # Setup logging
+            processMon.init_file_logging(appstart_time_point)
             processMon.create_file_storage(appstart_time_point)
+            # State  iteration
+            img_processing(processMon, img, is_sucessfully_read)
 
-            if is_sucessfully_read:
-                # generate file name based on current time
-                file_name = datetime.datetime.now().strftime(AppName + "_%Y%m%d_%H%M%S.%f") + '.png'
+        elif processMon.AppState == 'debug':
+            # set a main app start point
+            appstart_time_point = 'debug'
+            # Setup logging
+            processMon.init_file_logging(appstart_time_point)
+            processMon.create_file_storage(appstart_time_point)
+            # State  iteration
+            img_processing(processMon, img, is_sucessfully_read)
+            # Change state to wait
+            processMon.set_app_state(state='wait')
+            # debug state complete
 
-                # Write the image to the file
-                cv2.imwrite(os.path.join(full_path, file_name), img)
-            else:
-                logger.error(AppName + ' Cannot read video capture')
-                processMon.set_processor_key(AppName, 'State', 'error')
         elif AppState == 'stopped': # if True exit from loop
             isLoop = 0
 
@@ -74,6 +88,6 @@ if __name__ == '__main__':
 
     # And don't forget to release the camera!
     FrontCamcorder.release()
-    processMon.set_processor_key(processMon.AppName, 'State', 'stopped')
-    logger.info('Stop application')
+    processMon.set_app_state(state='stopped')
+    processMon.logger.info('Stop application')
 

@@ -19,7 +19,6 @@ from processors.monitoring import Monitoring
 # --- Create global classes
 processMon = Monitoring(app_name='PuckCam', device_num='1', app_state='wait') # device_num=video_device
 
-
 # Function returns the color of area based on the everaged colors of the ares
 def determine_area_color(x1, x2, y1, y2, area, domination):
     # Calculate mean colors by each color channel
@@ -50,8 +49,8 @@ def determine_area_color(x1, x2, y1, y2, area, domination):
     # returm detected color
     return color
 
-def img_processing(proc_mon, img):
-    if is_sucessfully_read:
+def img_processing(proc_mon, img, is_sucessfully):
+    if is_sucessfully:
         # Let's read widht and hight of the image. If the size is always the same this can taken out to increase the speed
         img_h, img_w, layers = img.shape
 
@@ -77,17 +76,17 @@ def img_processing(proc_mon, img):
                                            img_h / 2, "right", 1.3)
 
         # generate file name based on current time
-        file_name = datetime.datetime.now().strftime(AppName + "_%Y%m%d_%H%M%S.%f") + '.png'
+        file_name = datetime.datetime.now().strftime(proc_mon.AppName + "_%Y%m%d_%H%M%S.%f") + '.png'
 
-        proc_mon.set_processor_key(AppName, 'left_color', str(left_color))
-        proc_mon.set_processor_key(AppName, 'middle_color', str(middle_color))
-        proc_mon.set_processor_key(AppName, 'right_color', str(right_color))
+        proc_mon.set_processor_key(proc_mon.AppName, 'left_color', str(left_color))
+        proc_mon.set_processor_key(proc_mon.AppName, 'middle_color', str(middle_color))
+        proc_mon.set_processor_key(proc_mon.AppName, 'right_color', str(right_color))
 
         # Write the image to the file
         cv2.imwrite(os.path.join(full_path, file_name), img)
     else:
-        logger.error(AppName + ' Cannot read video capture')
-        processMon.set_processor_key(AppName, 'State', 'error')
+        proc_mon.logger.error(proc_mon.AppName + ' Cannot read video capture')
+        proc_mon.set_processor_key(proc_mon.AppName, 'State', 'error')
 
 # --- MAIN ---
 if __name__ == '__main__':
@@ -122,7 +121,7 @@ if __name__ == '__main__':
             processMon.init_file_logging(appstart_time_point)
             processMon.create_file_storage(appstart_time_point)
             # State  iteration
-            img_processing(processMon, img)
+            img_processing(processMon, img, is_sucessfully_read)
 
         elif processMon.AppState == 'debug':
             # set a main app start point
@@ -131,7 +130,7 @@ if __name__ == '__main__':
             processMon.init_file_logging(appstart_time_point)
             processMon.create_file_storage(appstart_time_point)
             # State  iteration
-            img_processing(processMon, img)
+            img_processing(processMon, img, is_sucessfully_read)
             # Change state to wait
             processMon.set_app_state(state='wait')
             # debug state complete
