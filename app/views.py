@@ -3,7 +3,7 @@ from flask import render_template, request, flash
 from forms import ColorSelect
 from modules.processors.monitoring import Monitoring
 
-processMon = Monitoring()
+processMon = Monitoring(app_name='WebApp', device_num='', app_state='active')
 #RedisServer = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 @app.route('/', methods=['GET', 'POST'])

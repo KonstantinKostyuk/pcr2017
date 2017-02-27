@@ -6,7 +6,7 @@ import os
 import sys
 # Load PCR modules from ../
 modules_path=os.path.dirname(sys.argv[0])
-if len(modules_path) <= 1:  # 0 or 1 equal sterted from current dir
+if len(modules_path) <= 1:  # 0 or 1 equal started from current dir
     modules_path=os.getcwd()+'/../'
 else:                       # path
     modules_path=os.path.dirname(modules_path)
@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
             # Setup logging
             processMon.init_file_logging(appstart_time_point)
-            processMon.create_file_storage(appstart_time_point)
+            full_path = processMon.create_file_storage(appstart_time_point)
 
             # init start time point
             processMon.logger.info('Set ' + processMon.AppName + '.StartPoint to ' + appstart_time_point)

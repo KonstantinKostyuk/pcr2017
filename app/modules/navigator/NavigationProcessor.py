@@ -1,14 +1,12 @@
 #!/usr/bin/python
 
-#  Import openCV libraries
-import datetime
+#  Import libraries
 import math
 import os
 import sys
-import logging
 # Load PCR modules from ../
 modules_path=os.path.dirname(sys.argv[0])
-if len(modules_path) <= 1:  # 0 or 1 equal sterted from current dir
+if len(modules_path) <= 1:  # 0 or 1 equal started from current dir
     modules_path=os.getcwd()+'/../'
 else:                       # path
     modules_path=os.path.dirname(modules_path)
@@ -31,20 +29,20 @@ EncoderCPR = 3200   # Encoder CPR - Count Per Rotation
 processMon = Monitoring(app_name='Navigation', device_num='/dev/ttyACM0', app_state='wait')
 try:
     # create to RoboClaw
-    logger.info('Open device num - ' + str(DeviceNum))
-    roboclaw = RoboClaw(DeviceNum, 0x80)
+    processMon.logger.info('Open device num - ' + str(processMon.DeviceNum))
+    roboclaw = RoboClaw(processMon.DeviceNum, 0x80)
 except:
-    AppState = 'error'
+    processMon.set_app_state(state='error')  # set and save
 
 
-def calculate_position(distance_mm, wheel_diameter, encoder_cpr):
+def calculate_position(logger, distance_mm, wheel_diameter, encoder_cpr):
     logger.debug('Function start')
     return int((distance_mm / (math.pi * wheel_diameter) * encoder_cpr))
 
-def go_to_position(enc_count):
+def go_to_position(logger, enc_count):
     logger.debug('Function start')
     # go forward distance by encoders
-    # roboclaw.SpeedAccelDeccelPositionM1M2(MC_ADDRES, 5660, 5660, 5660, enc_count, 5660, 5660, 5660, enc_count, 0)
+    # roboclaw.SpeedAccelDeccelPositionM1M2(MC_ADDRESS, 5660, 5660, 5660, enc_count, 5660, 5660, 5660, enc_count, 0)
     roboclaw.drive_to_position_raw(motor=MotorLeft, accel=0, speed=0, deccel=0, position=enc_count, buffer=1)
     roboclaw.drive_to_position_raw(motor=MotorRight, accel=0, speed=0, deccel=0, position=enc_count, buffer=1)
 
@@ -55,39 +53,39 @@ if __name__ == '__main__':
     # Start app
     processMon.logger.info('Start app ' + processMon.AppName)
 
-    logger.info('Set State to ' + AppState + ' for ' + AppName + 'Processor')
-    processMon.set_processor_key(AppName, 'State', AppState)
-
     processMon.logger.info('Start loop')
+
     isLoop = True
     while isLoop :
+        # Get current state from Redis and update processMon.AppState
+        processMon.get_app_state()
 
-        AppState = processMon.get_processor_key(AppName, 'State')
-        if AppStateBefore != AppState:
-            logger.info(AppName + 'Processor.State changed from ' + AppStateBefore + ' to ' + AppState)
-
-
-        if AppState == 'active':
+        if processMon.AppState == 'active':
             # get a main app start point
-            appstart_time_point = processMon.get_processor_key(GlobalAppName, 'StartPoint')
-
+            appstart_time_point = processMon.get_processor_key(processMon.AppName, 'StartPoint')
             # Setup logging
-            init_file_logging(logger, appstart_time_point)
+            processMon.init_file_logging(appstart_time_point)
+            full_path = processMon.create_file_storage(appstart_time_point)
+            # State  iteration
 
-            # Setup folder for data files
-            logger.info('Define store dir - ' + appstart_time_point)
-            processMon.create_file_storage(appstart_time_point)
+        elif processMon.AppState == 'debug':
+            # set a main app start point
+            appstart_time_point = 'debug'
+            # Setup logging
+            processMon.init_file_logging(appstart_time_point)
+            full_path = processMon.create_file_storage(appstart_time_point)
+            # State  iteration
 
-        elif AppState == 'debug':
-            AppState = 'wait'
-            processMon.set_processor_key(AppName, 'State', AppState)
+            # Change state to wait
+            processMon.set_app_state(state='wait')
+            # debug state complete
 
-        elif AppState == 'stopped': # if True exit from loop
+        elif processMon.AppState == 'stopped': # if True exit from loop
             isLoop = False
 
-        AppStateBefore = AppState
+        processMon.update_app_state_before()
 
     # Finish
     processMon.set_processor_key(processMon.AppName, 'State', 'stopped')
-    logger.info('Stop application')
+    processMon.logger.info('Stop application')
 

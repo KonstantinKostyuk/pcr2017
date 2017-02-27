@@ -31,6 +31,7 @@ class Monitoring:
         self.logger.info('Set State to ' + self.AppState + ' for ' + self.AppName + 'Processor')
         self.save_app_state()
 
+
     '''
     Update application old state
     '''
@@ -79,7 +80,7 @@ class Monitoring:
     '''
     def init_file_logging(self, appstart_time_point):
 
-        if self.isFHLogging == False:
+        if self.isFHLogging:
             # setup logger level
             self.logger.setLevel(logging.DEBUG)
 
@@ -133,14 +134,14 @@ class Monitoring:
     '''
     function return any value from key for processor
     '''
-    def get_processor_key(self, prcessor, key):
-        return self.RedisServer.get(prcessor +'.'+ key)
+    def get_processor_key(self, processor, key):
+        return self.RedisServer.get(processor + '.' + key)
 
     '''
     function return any value from key for processor
     '''
-    def set_processor_key(self, prcessor, key, value):
-        return self.RedisServer.set(prcessor + '.' + key, value)
+    def set_processor_key(self, processor, key, value):
+        return self.RedisServer.set(processor + '.' + key, value)
 
     '''
     function create  directory for save any information
@@ -150,12 +151,13 @@ class Monitoring:
         current_dir = os.getcwd()
         store_dir = appstart_time_point
         full_path = os.path.join(current_dir, store_dir)
-        # logger.info('Define store dir full path: ' + full_path)
+        # logger.info('Define store dir full path: ' + full_path_to_storage)
         if not os.path.exists(full_path):
             os.mkdir(full_path)
+        return full_path
 
 if __name__ == '__main__':
-    processMon = Monitoring()
+    processMon = Monitoring(app_name='App', device_num='', app_state='wait')
     print( 'Redis server state (0=worked) ' + str(processMon.get_redis_state()) )
     print( 'Process "redis-server" state (0=worked) ' + str(processMon.get_processor_state('redis-server')) )
     print( '---' )

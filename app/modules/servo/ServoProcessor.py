@@ -4,10 +4,9 @@
 import time
 import os
 import sys
-import logging
 # Load PCR modules from ../
 modules_path=os.path.dirname(sys.argv[0])
-if len(modules_path) <= 1:  # 0 or 1 equal sterted from current dir
+if len(modules_path) <= 1:  # 0 or 1 equal started from current dir
     modules_path=os.getcwd()+'/../'
 else:                       # path
     modules_path=os.path.dirname(modules_path)
@@ -46,36 +45,36 @@ GT_BLU_OPEN_POS = 8000   # Gate for BLUE store open
 
 
 
-def get_color_list(proc_mon):
-    colors = [proc_mon.get_processor_key(ColorProcessorAppName, 'left_color'),
-              proc_mon.get_processor_key(ColorProcessorAppName, 'middle_color'),
-              proc_mon.get_processor_key(ColorProcessorAppName, 'right_color')]
+def get_color_list(processor_mon):
+    colors = [processor_mon.get_processor_key(ColorProcessorAppName, 'left_color'),
+              processor_mon.get_processor_key(ColorProcessorAppName, 'middle_color'),
+              processor_mon.get_processor_key(ColorProcessorAppName, 'right_color')]
     return colors
 
 
-def get_puck_color(proc_mon, list_colors):
+def get_puck_color(processor_mon, list_colors):
     if list_colors[0] == list_colors[1] and list_colors[1] == list_colors[2]:
-        proc_mon.set_processor_key(NavigationAppName, 'Base', list_colors[1])
+        processor_mon.set_processor_key(NavigationAppName, 'Base', list_colors[1])
         return 'none'
     elif list_colors[0] != list_colors[1] and list_colors[1] != list_colors[2]:
-        proc_mon.set_processor_key(NavigationAppName, 'Base', 'white')
+        processor_mon.set_processor_key(NavigationAppName, 'Base', 'white')
         return list_colors[1]
     else:
-        proc_mon.set_processor_key(NavigationAppName, 'Base', 'white')
+        processor_mon.set_processor_key(NavigationAppName, 'Base', 'white')
         return 'none'
 
 
-def sort_pucks(proc_mon, puck_color, direction):
+def sort_pucks(processor_mon, puck_color, direction):
     if (puck_color == 'blue') and direction == 'FWD':
         # blue
-        proc_mon.logger.info('Sort the ' + puck_color + ' puck.')
+        processor_mon.logger.info('Sort the ' + puck_color + ' puck.')
         Maestro.setTarget(SRV_SEP_CHANEL, SEP_BLU_OPEN_POS)
         time.sleep(1)
         Maestro.setTarget(SRV_SEP_CHANEL, SRV_NEUTRAL_POS)
         return puck_color
     elif (puck_color == 'red') and direction == 'FWD':
         # red
-        proc_mon.logger.info('Sort the ' + puck_color + ' puck.')
+        processor_mon.logger.info('Sort the ' + puck_color + ' puck.')
         Maestro.setTarget(SRV_SEP_CHANEL, SEP_RED_OPEN_POS)
         time.sleep(1)
         Maestro.setTarget(SRV_SEP_CHANEL, SRV_NEUTRAL_POS)
@@ -84,40 +83,40 @@ def sort_pucks(proc_mon, puck_color, direction):
         return 'none'
 
 
-def release_red(proc_mon, servo):
-    proc_mon.logger.debug('Open RED gate')
+def release_red(processor_mon, servo):
+    processor_mon.logger.debug('Open RED gate')
     servo.setTarget(SRV_RED_CHANEL, GT_RED_OPEN_POS)
 
 
-def release_blue(proc_mon, servo):
-    proc_mon.logger.debug('Open BLUE gate')
+def release_blue(processor_mon, servo):
+    processor_mon.logger.debug('Open BLUE gate')
     servo.setTarget(SRV_BLU_CHANEL, GT_BLU_OPEN_POS)
 
 
-def close_gates(proc_mon, servo):
-    proc_mon.logger.debug('Close gates')
+def close_gates(processor_mon, servo):
+    processor_mon.logger.debug('Close gates')
     servo.setTarget(SRV_RED_CHANEL, SRV_NEUTRAL_POS)
     servo.setTarget(SRV_BLU_CHANEL, SRV_NEUTRAL_POS)
 
 
-def active_iteration(proc_mon, servo, gate_state_before):
+def active_iteration(processor_mon, servo, gate_state_before):
     # Control separating
-    list_colors = get_color_list(proc_mon)  # get list of colors from PuckCam
-    puck_color = get_puck_color(proc_mon, list_colors)  # detect puck and color
+    list_colors = get_color_list(processor_mon)  # get list of colors from PuckCam
+    puck_color = get_puck_color(processor_mon, list_colors)  # detect puck and color
     if puck_color != 'none':  # if not 'none' sorting
-        sort_result = sort_pucks(proc_mon, puck_color, proc_mon.get_processor_key(NavigationAppName, 'Direction'))
+        sort_result = sort_pucks(processor_mon, puck_color, processor_mon.get_processor_key(NavigationAppName, 'Direction'))
         if sort_result != 'none':
-            proc_mon.set_processor_key(GlobalAppName, sort_result,
-                                         int(proc_mon.get_processor_key(GlobalAppName, sort_result)) + 1)
+            processor_mon.set_processor_key(GlobalAppName, sort_result,
+                                         int(processor_mon.get_processor_key(GlobalAppName, sort_result)) + 1)
 
     # Control gates
-    gate_state = proc_mon.get_processor_key(NavigationAppName, 'Gate')
+    gate_state = processor_mon.get_processor_key(NavigationAppName, 'Gate')
     if gate_state_before != gate_state and gate_state == 'close':
-        close_gates(proc_mon, servo)
+        close_gates(processor_mon, servo)
     elif gate_state_before != gate_state and gate_state == 'red':
-        release_red(proc_mon, servo)
+        release_red(processor_mon, servo)
     elif gate_state_before != gate_state and gate_state == 'blue':
-        release_blue(proc_mon, servo)
+        release_blue(processor_mon, servo)
     return gate_state
 
 
@@ -156,7 +155,7 @@ if __name__ == '__main__':
             appstart_time_point = processMon.get_processor_key(processMon.AppName, 'StartPoint')
             # Setup logging
             processMon.init_file_logging(appstart_time_point)
-            processMon.create_file_storage(appstart_time_point)
+            full_path = processMon.create_file_storage(appstart_time_point)
             # State  iteration
             GateState = active_iteration(processMon, Maestro, GateState)
             # active state complete
@@ -166,7 +165,7 @@ if __name__ == '__main__':
             appstart_time_point = 'debug'
             # Setup logging
             processMon.init_file_logging(appstart_time_point)
-            processMon.create_file_storage(appstart_time_point)
+            full_path = processMon.create_file_storage(appstart_time_point)
             # State  iteration
             GateState = active_iteration(processMon, Maestro, GateState)
             # Change state to wait
