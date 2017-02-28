@@ -39,12 +39,12 @@ if __name__ == '__main__':
 
     # Connect to video camera
     processMon.logger.info('Open video device num - ' + str(processMon.DeviceNum))
-    FrontCamcorder = cv2.VideoCapture(processMon.DeviceNum)
+    FrontCamcorder = cv2.VideoCapture(int(processMon.DeviceNum))
 
     # Set some parameters of capture webcam
     FrontCamcorder.set(cv2.cv.CV_CAP_PROP_FPS, 5)
-    # PuckCamcorder.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1280)
-    # PuckCamcorder.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 720)
+    # FrontCamcorder.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1280)
+    # FrontCamcorder.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 720)
 
 
     processMon.logger.info('Start loop')

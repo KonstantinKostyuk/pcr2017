@@ -12,13 +12,13 @@ else:                       # path
 sys.path.append(modules_path)
 from processors.monitoring import Monitoring
 # Complete load PCR modules
-from upm import pyupm_i2clcd as LCD
+from upm import pyupm_i2clcd as lcd1602
 
 #Used app names
 GlobalAppName='Global'
 
 # --- Create global classes
-processMon = Monitoring(app_name='LCD1602', device_num='6', app_state='wait') # I2C Bus number for LCD
+processMon = Monitoring(app_name='LCD1602', device_num='6', app_state='wait') # I2C Bus number for lcd1602
 
 
 def print_to_lcd(processor_mon, lcd1602):
@@ -28,7 +28,7 @@ def print_to_lcd(processor_mon, lcd1602):
     lcdBlue = int(processor_mon.get_processor_key(processor_mon.AppName, 'Blue'))
     lcdLineA = processor_mon.get_processor_key(processor_mon.AppName, 'LineA')
     lcdLineB = processor_mon.get_processor_key(processor_mon.AppName, 'LineB')
-    # send data to LCD
+    # send data to lcd1602
     lcd1602.setColor(lcdRed, lcdGreen, lcdBlue)
     lcd1602.setCursor(0, 0)
     lcd1602.write(lcdLineA)
@@ -42,9 +42,9 @@ if __name__ == '__main__':
     # Start app
     processMon.logger.info('Start app ' + processMon.AppName)
 
-    # Connect to LCD
+    # Connect to lcd1602
     processMon.logger.info('Open I2C device num - ' + str(processMon.DeviceNum))
-    lcd = LCD.Jhd1313m1(processMon.DeviceNum, 0x3E, 0x62)
+    lcd = lcd1602.Jhd1313m1(int(processMon.DeviceNum), 0x3E, 0x62)
 
     # Set yellow
     lcd.setCursor(0, 0)
